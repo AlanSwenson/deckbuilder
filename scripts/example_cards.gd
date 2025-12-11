@@ -151,6 +151,14 @@ static func create_void_shift() -> CardData:
 	card.roll_stats()
 	return card
 
+static func create_starter_enemy_deck() -> Array[CardData]:
+	var deck: Array[CardData] = []
+	
+	# 20 Flame Burst cards
+	for i in 20:
+		deck.append(create_flame_burst())
+	return deck
+
 # Create a starter deck (30 cards)
 static func create_starter_deck() -> Array[CardData]:
 	var deck: Array[CardData] = []
