@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3 uid="uid://chixb0wso8nu8"]
+[gd_scene load_steps=9 format=3 uid="uid://chixb0wso8nu8"]
 
 [ext_resource type="Script" uid="uid://fqnicuhsiixx" path="res://scripts/CardManager.gd" id="1_0xm2m"]
 [ext_resource type="PackedScene" uid="uid://biyfjgryh0vy1" path="res://scenes/CardSlot.tscn" id="3_h2yge"]
@@ -6,6 +6,7 @@
 [ext_resource type="Script" uid="uid://c0abjvsmtgrn1" path="res://scripts/Deck.gd" id="4_7mycd"]
 [ext_resource type="Texture2D" uid="uid://bagx7xvwq10t4" path="res://assets/art/cards/CardBack.png" id="4_lquwl"]
 [ext_resource type="Script" uid="uid://dk7tvi3rjxdqw" path="res://scripts/InputManager.gd" id="6_272bh"]
+[ext_resource type="Script" uid="uid://c3o75f7d402w8" path="res://scripts/PlayerDeck.gd" id="7_playerdeck"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_7mycd"]
 size = Vector2(148, 209)
@@ -29,6 +30,9 @@ position = Vector2(663, 350)
 
 [node name="PlayerHand" type="Node2D" parent="."]
 script = ExtResource("4_1bvp3")
+
+[node name="PlayerDeck" type="Node2D" parent="."]
+script = ExtResource("7_playerdeck")
 
 [node name="Deck" type="Node2D" parent="."]
 position = Vector2(150, 890)
