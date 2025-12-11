@@ -9,7 +9,7 @@ const DEAL_DELAY: float = 0.05  # Delay between dealing each card (twice as fast
 
 var player_hand = []
 var center_screen_x
-var card_id_counter = 0  # Counter for unique card IDs
+var card_id_counter = 1  # Counter for unique card IDs (starts at 1, not 0)
 var cards_to_deal = []  # Queue of cards waiting to be dealt
 var is_dealing: bool = false  # Track if we're currently dealing
 
@@ -26,26 +26,10 @@ func _ready() -> void:
 	# Convert deck position to local coordinates relative to CardManager
 	var deck_local_position = card_manager.to_local(deck_global_position)
 	
-	# Create all cards at deck position
-	var card_scene = preload(CARD_SCENE_PATH)
-	for i in range(HAND_COUNT):
-		var new_card = card_scene.instantiate()
-		card_manager.add_child(new_card)
-		new_card.name = "Card" + str(i)  # Give each card a unique name
-		
-		# Position card at deck location initially (using local position)
-		new_card.position = deck_local_position
-		
-		# Set a unique card number for testing/identification (never changes)
-		if new_card.has_method("set_card_number"):
-			new_card.set_card_number(card_id_counter)
-		card_id_counter += 1
-		
-		# Ensure the card is registered with CardManager for dragging
-		card_manager.register_card(new_card)
-		
-		# Add to queue for dealing (but don't add to hand yet)
-		cards_to_deal.append(new_card)
+	# Store deck position and card manager for later use
+	# We'll create cards and draw from deck one at a time during dealing
+	# Store these references for use in deal_cards
+	cards_to_deal.clear()  # Make sure it's empty
 	
 	# Start dealing cards automatically
 	await get_tree().process_frame  # Wait one frame to ensure everything is initialized
@@ -57,23 +41,75 @@ func add_card_to_hand(card):
 
 # Deal cards from deck to hand one at a time
 func deal_cards() -> void:
-	if is_dealing or cards_to_deal.is_empty():
+	if is_dealing:
 		return
 	
 	is_dealing = true
 	
-	# Deal each card one at a time in reverse order (first position first)
-	for card in cards_to_deal:
+	# Get references needed for dealing
+	var deck = get_parent().get_node_or_null("Deck")
+	var card_manager = $"../CardManager"
+	var player_deck = get_parent().get_node_or_null("PlayerDeck")
+	
+	if not player_deck:
+		print("[PlayerHand] ERROR: PlayerDeck node not found!")
+		is_dealing = false
+		return
+	
+	var deck_global_position = Vector2(150, 890)  # Default deck position
+	if deck:
+		deck_global_position = deck.global_position
+	
+	# Convert deck position to local coordinates relative to CardManager
+	var deck_local_position = card_manager.to_local(deck_global_position)
+	var card_scene = preload(CARD_SCENE_PATH)
+	
+	# Deal each card one at a time, drawing from deck as we go
+	for i in range(HAND_COUNT):
+		# Draw a card from the deck NOW (this will decrease the deck counter)
+		var card_data = null
+		if player_deck and player_deck.has_method("draw_card"):
+			card_data = player_deck.draw_card()
+		else:
+			print("[PlayerHand] WARNING: PlayerDeck not found, creating empty card")
+		
+		# Instantiate the card
+		var new_card = card_scene.instantiate()
+		card_manager.add_child(new_card)
+		new_card.name = "Card" + str(i)  # Give each card a unique name
+		
+		# Wait a frame to ensure card is fully in tree before setting data
+		await get_tree().process_frame
+		
+		# Set the card data (which will update the display)
+		if card_data:
+			if new_card.has_method("set_card_data"):
+				new_card.set_card_data(card_data)
+				# Force an immediate update as well
+				if new_card.has_method("update_card_display"):
+					new_card.update_card_display()
+		
+		# Set a unique card number for testing/identification (never changes)
+		if new_card.has_method("set_card_number"):
+			new_card.set_card_number(card_id_counter)
+		card_id_counter += 1
+		
+		# Position card at deck location initially (using local position)
+		new_card.position = deck_local_position
+		
+		# Ensure the card is registered with CardManager for dragging
+		card_manager.register_card(new_card)
+		
 		# Insert card at the beginning of the hand array (position 0)
-		player_hand.insert(0, card)
+		player_hand.insert(0, new_card)
 		
 		# Update positions for all cards in hand (they may shift as hand grows)
 		# This ensures the hand stays centered as cards are added
-		for i in range(player_hand.size()):
-			var card_in_hand = player_hand[i]
-			var new_position = Vector2(calculate_card_position(i), HAND_Y_POSITION)
+		for j in range(player_hand.size()):
+			var card_in_hand = player_hand[j]
+			var new_position = Vector2(calculate_card_position(j), HAND_Y_POSITION)
 			
-			if card_in_hand == card:
+			if card_in_hand == new_card:
 				# This is the newly dealt card - animate from deck to position 0
 				card_in_hand.set_meta("starting_position", new_position)
 				await _deal_single_card(card_in_hand, new_position)
@@ -88,13 +124,12 @@ func deal_cards() -> void:
 			
 			# Update z-index for all cards
 			var hand_size = player_hand.size()
-			var z_index_value = (hand_size - i) * 10
+			var z_index_value = (hand_size - j) * 10
 			card_in_hand.z_index = z_index_value
 		
 		# Small delay before dealing next card
 		await get_tree().create_timer(DEAL_DELAY).timeout
 	
-	cards_to_deal.clear()
 	is_dealing = false
 	print("[PlayerHand] Finished dealing all cards")
 
