@@ -75,11 +75,19 @@ func deal_cards() -> void:
 		
 		# Instantiate the card
 		var new_card = card_scene.instantiate()
-		card_manager.add_child(new_card)
 		new_card.name = "Card" + str(i)  # Give each card a unique name
+		
+		# Position card at deck location BEFORE adding to tree (prevents flash at origin)
+		new_card.position = deck_local_position
+		
+		# Add card to card_manager
+		card_manager.add_child(new_card)
 		
 		# Wait a frame to ensure card is fully in tree before setting data
 		await get_tree().process_frame
+		
+		# Verify card is at deck position (in case something moved it)
+		new_card.position = deck_local_position
 		
 		# Set the card data (which will update the display)
 		if card_data:
@@ -93,9 +101,6 @@ func deal_cards() -> void:
 		if new_card.has_method("set_card_number"):
 			new_card.set_card_number(card_id_counter)
 		card_id_counter += 1
-		
-		# Position card at deck location initially (using local position)
-		new_card.position = deck_local_position
 		
 		# Ensure the card is registered with CardManager for dragging
 		card_manager.register_card(new_card)
@@ -137,6 +142,14 @@ func deal_cards() -> void:
 func _deal_single_card(card: Node2D, target_position: Vector2) -> void:
 	if not card or not is_instance_valid(card):
 		return
+	
+	# Ensure card starts at deck position (in case it was moved)
+	var deck = get_parent().get_node_or_null("Deck")
+	var card_manager = $"../CardManager"
+	if deck and card_manager:
+		var deck_global_position = deck.global_position
+		var deck_local_position = card_manager.to_local(deck_global_position)
+		card.position = deck_local_position
 	
 	# Create tween for smooth animation
 	var tween = get_tree().create_tween()
