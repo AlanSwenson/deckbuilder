@@ -4,12 +4,13 @@ const HAND_COUNT = 10
 const CARD_SCENE_PATH = "res://scenes/Card.tscn"
 const CARD_WIDTH = 100
 const HAND_Y_POSITION = 890
-const DEAL_ANIMATION_DURATION: float = 0.2  # Duration for each card to travel (twice as fast)
+# Duration for each card to travel (matches card_flip)
+const DEAL_ANIMATION_DURATION: float = 0.2
 const DEAL_DELAY: float = 0.05  # Delay between dealing each card (twice as fast)
 
 var player_hand = []
 var center_screen_x
-var card_id_counter = 1  # Counter for unique card IDs (starts at 1, not 0)
+var card_id_counter = 1  # Counter for unique card IDs (starts at 1, goes to 10)
 var cards_to_deal = []  # Queue of cards waiting to be dealt
 var is_dealing: bool = false  # Track if we're currently dealing
 
@@ -75,7 +76,19 @@ func deal_cards() -> void:
 		
 		# Instantiate the card
 		var new_card = card_scene.instantiate()
-		new_card.name = "Card" + str(i)  # Give each card a unique name
+		
+		# Set card number based on when it's dealt (static, never changes)
+		var card_number = card_id_counter
+		card_id_counter += 1
+		
+		# Give each card a unique name based on its card number for debug
+		new_card.name = "Card" + str(card_number)
+		
+		# Set the card number immediately (this is static and won't change)
+		if new_card.has_method("set_card_number"):
+			new_card.set_card_number(card_number)
+		# Also store in meta for reference
+		new_card.set_meta("card_number", card_number)
 		
 		# Position card at deck location BEFORE adding to tree (prevents flash at origin)
 		new_card.position = deck_local_position
@@ -97,13 +110,9 @@ func deal_cards() -> void:
 				if new_card.has_method("update_card_display"):
 					new_card.update_card_display()
 		
-		# Set a unique card number for testing/identification (never changes)
-		if new_card.has_method("set_card_number"):
-			new_card.set_card_number(card_id_counter)
-		card_id_counter += 1
-		
-		# Ensure the card is registered with CardManager for dragging
-		card_manager.register_card(new_card)
+		# Register card with CardManager for dragging
+		if card_manager:
+			card_manager.register_card(new_card)
 		
 		# Insert card at the beginning of the hand array (position 0)
 		player_hand.insert(0, new_card)
@@ -150,6 +159,14 @@ func _deal_single_card(card: Node2D, target_position: Vector2) -> void:
 		var deck_global_position = deck.global_position
 		var deck_local_position = card_manager.to_local(deck_global_position)
 		card.position = deck_local_position
+	
+	# Play the card flip animation if available
+	var animation_player = card.get_node_or_null("AnimationPlayer")
+	if animation_player:
+		if animation_player.has_animation("card_flip"):
+			animation_player.play("card_flip")
+		else:
+			print("[PlayerHand] WARNING: card_flip animation not found in AnimationPlayer")
 	
 	# Create tween for smooth animation
 	var tween = get_tree().create_tween()
@@ -226,17 +243,31 @@ func does_card_overlap_hand_area(card: Node2D) -> bool:
 	return overlaps_horizontally and overlaps_vertically
 		
 func update_hand_positions():
+	# Get InputManager to check if cards are being dragged
+	var input_manager = get_parent().get_node_or_null("InputManager")
+	var is_dragging_any = false
+	var dragged_card_ref = null
+	if input_manager and input_manager.has_method("get_dragged_card"):
+		dragged_card_ref = input_manager.get_dragged_card()
+		if "is_dragging" in input_manager:
+			is_dragging_any = input_manager.is_dragging
+	
 	for i in range(player_hand.size()):
 		var new_position = Vector2(calculate_card_position(i), HAND_Y_POSITION)
 		var card = player_hand[i]
 		# Store starting position as meta data (proper way to attach data to nodes)
 		card.set_meta("starting_position", new_position)
+		
+		# Card numbers are static (set when dealt) - don't update them here
+		
 		# Set z-index: leftmost card (index 0) is on top (highest z-index)
 		# Rightmost card is on bottom (lowest z-index)
 		# Use larger spacing to ensure proper layering
-		var z_index_value = (player_hand.size() - i) * 10
-		card.z_index = z_index_value
-		# Note: Card numbers are NOT updated here - they stay constant for identification
+		# BUT: Don't modify z_index if this card is currently being dragged
+		if not is_dragging_any or card != dragged_card_ref:
+			var z_index_value = (player_hand.size() - i) * 10
+			card.z_index = z_index_value
+		
 		animate_card_to_position(card, new_position)
 		
 func calculate_card_position(index):
@@ -262,6 +293,16 @@ func get_card_index(card) -> int:
 func update_card_z_index(card) -> void:
 	if not card in player_hand:
 		return
+	
+	# Don't modify z_index if this card is currently being dragged
+	var input_manager = get_parent().get_node_or_null("InputManager")
+	if input_manager and input_manager.has_method("get_dragged_card"):
+		var is_dragging = false
+		if "is_dragging" in input_manager:
+			is_dragging = input_manager.is_dragging
+		var dragged_card_ref = input_manager.get_dragged_card()
+		if is_dragging and card == dragged_card_ref:
+			return  # Don't modify z_index of dragged card
 	
 	var card_index = player_hand.find(card)
 	if card_index == -1:

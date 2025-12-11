@@ -8,6 +8,10 @@ var dragged_card_start_position: Vector2 = Vector2.ZERO  # Store original positi
 var dragged_card_initial_mouse_pos: Vector2 = Vector2.ZERO  # Mouse position when drag started
 var hovered_card: Node2D = null  # Track which card is currently being hovered
 
+# Public getter for dragged card (so other scripts can check if a card is being dragged)
+func get_dragged_card() -> Node2D:
+	return dragged_card
+
 # Constants
 const HOVER_SCALE: float = 1.15  # Scale factor when hovering (15% bigger)
 const HOVER_ANIMATION_DURATION: float = 0.15  # Animation duration in seconds
@@ -51,12 +55,17 @@ func _process(_delta: float) -> void:
 		)
 		
 		dragged_card.global_position = target_position
-		# Ensure dragged card stays on top while dragging
-		_keep_dragged_card_on_top()
 		
 		# Check if we should show reorder preview (horizontal movement, not too far vertically)
 		if _should_reorder_hand():
 			_update_hand_reorder_preview(mouse_pos)
+		
+		# Ensure dragged card stays on top while dragging
+		# (call last to override any other z_index changes)
+		_keep_dragged_card_on_top()
+		
+		# Also defer to end of frame to ensure z_index is absolutely last
+		call_deferred("_keep_dragged_card_on_top")
 		
 		# Debug log every 60 frames while dragging
 		if Engine.get_process_frames() % 60 == 0:
@@ -113,10 +122,12 @@ func _start_dragging(card: Node2D) -> void:
 	var mouse_pos = get_global_mouse_position()
 	dragged_card_initial_mouse_pos = mouse_pos
 	drag_offset = mouse_pos - card.global_position
-	# Bring card to top immediately when dragging starts
-	_bring_dragged_card_to_top()
 	# Reset hover effect when starting to drag
 	_reset_hover_effect()
+	# Bring card to top immediately when dragging starts (call after reset to ensure it's set)
+	_bring_dragged_card_to_top()
+	# Force z_index one more time to ensure it's set before next frame
+	card.z_index = 1000
 	print("[InputManager] DRAGGING STARTED for ", card.name, " | Mouse: ", mouse_pos,
 		" | Card: ", card.global_position, " | Offset: ", drag_offset)
 
@@ -131,10 +142,12 @@ func _handle_card_release(card: Node2D) -> void:
 		was_snapped = card_manager.check_and_snap_to_slot(card)
 	
 	if was_snapped:
-		# Check if card was in hand - if so, remove it
+		# Card was snapped to a slot
+		# If card was in hand, remove it from hand
 		if _is_card_in_hand(card):
 			if card_manager.has_method("notify_card_played"):
 				card_manager.notify_card_played(card)
+		# Note: If card was already in a slot, the swap logic in CardManager handles it
 	elif _is_mouse_over_hand_area():
 		# Card released over hand area - add it back if not already in hand
 		if not _is_card_in_hand(card):
@@ -225,7 +238,8 @@ func _bring_dragged_card_to_top() -> void:
 	if not dragged_card.has_meta("dragged_original_z_index"):
 		dragged_card.set_meta("dragged_original_z_index", dragged_card.z_index)
 	
-	# Bring to very top (high z_index so it's above everything)
+	# Bring to very top (high z_index so it's above everything - slots, other cards, etc.)
+	# Use 1000 which is above slot cards (max ~110) and hand cards (max ~100) but below max (4096)
 	dragged_card.z_index = 1000
 
 # Keep dragged card on top while dragging
@@ -233,9 +247,39 @@ func _keep_dragged_card_on_top() -> void:
 	if not dragged_card or not is_instance_valid(dragged_card):
 		return
 	
-	# Ensure it stays on top
-	if dragged_card.z_index < 1000:
-		dragged_card.z_index = 1000
+	# Always set to high z_index to ensure it's above everything (slots, other cards, etc.)
+	# Use 1000 which is above slot cards (max ~110) and hand cards (max ~100) but below max (4096)
+	# Set unconditionally every frame to override any other code that might change it
+	dragged_card.z_index = 1000
+	
+	# Also ensure all other cards in slots maintain their lower z_index
+	# This prevents other slotted cards from accidentally getting high z_index
+	var main_node = get_parent() if get_parent() else get_tree().current_scene
+	if main_node:
+		var card_slots = []
+		_find_all_card_slots(main_node, card_slots)
+		for slot in card_slots:
+			if slot.has_method("get_current_card"):
+				var slot_card = slot.get_current_card()
+				if slot_card and slot_card != dragged_card and slot_card.is_inside_tree():
+					# Ensure slot card has lower z_index than dragged card
+					# Restore proper slot z_index based on card number
+					if slot_card.z_index >= 1000:
+						var card_number = 1  # Default
+						if slot_card.has_meta("card_number"):
+							card_number = slot_card.get_meta("card_number")
+						else:
+							var label = slot_card.get_node_or_null("CardNumberLabel")
+							if label and label.text.is_valid_int():
+								card_number = label.text.to_int()
+						slot_card.z_index = 100 + card_number
+
+# Helper to find all card slots recursively
+func _find_all_card_slots(node: Node, result: Array) -> void:
+	if node.name.begins_with("CardSlot"):
+		result.append(node)
+	for child in node.get_children():
+		_find_all_card_slots(child, result)
 
 # Bring card to front by adjusting z_index (for hover effect)
 func _bring_card_to_front(card: Node2D) -> void:

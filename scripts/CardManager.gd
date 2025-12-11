@@ -81,11 +81,34 @@ func _on_child_added(node: Node) -> void:
 		await get_tree().process_frame
 		_connect_card(node)
 
+# Find which slot (if any) a card is currently in
+func find_card_slot(card: Node2D) -> Node2D:
+	if not card:
+		return null
+	
+	if card.has_meta("current_slot"):
+		return card.get_meta("current_slot")
+	
+	# Fallback: search all slots for this card
+	var main_node = get_parent() if get_parent() else get_tree().current_scene
+	var card_slots = []
+	_find_card_slots(main_node, card_slots)
+	
+	for slot in card_slots:
+		if slot.has_method("get_current_card"):
+			if slot.get_current_card() == card:
+				return slot
+	
+	return null
+
 # Check if a card overlaps any CardSlot and snap it if it does
 # Returns true if the card was snapped to a slot, false otherwise
 func check_and_snap_to_slot(card: Node2D) -> bool:
 	if not card:
 		return false
+	
+	# Find the slot this card originally came from (if any)
+	var original_slot = find_card_slot(card)
 	
 	# Find all CardSlot nodes in the scene
 	# (they should be siblings of CardManager or in parent)
@@ -100,44 +123,87 @@ func check_and_snap_to_slot(card: Node2D) -> bool:
 			if slot.is_card_overlapping(card):
 				overlapping_slots.append(slot)
 	
-	# If no overlapping slots, return false
+	# If no overlapping slots, clear the card's slot reference if it had one
 	if overlapping_slots.is_empty():
+		if original_slot and original_slot.has_method("remove_card"):
+			original_slot.remove_card(card)
 		return false
 	
-	# If only one overlapping slot, snap to it
+	# Determine target slot (closest if multiple)
+	var target_slot = null
+	
 	if overlapping_slots.size() == 1:
-		overlapping_slots[0].snap_card(card)
-		print("[CardManager] Card snapped to slot: ", overlapping_slots[0].name)
-		return true
+		target_slot = overlapping_slots[0]
+	else:
+		# Multiple overlapping slots - find the one closest to mouse position
+		var mouse_pos = get_global_mouse_position()
+		var closest_distance = INF
+		
+		for slot in overlapping_slots:
+			if slot.has_method("get_distance_to_point"):
+				var distance = slot.get_distance_to_point(mouse_pos)
+				if distance < closest_distance:
+					closest_distance = distance
+					target_slot = slot
+			else:
+				# Fallback: use distance from global_position
+				var distance = slot.global_position.distance_to(mouse_pos)
+				if distance < closest_distance:
+					closest_distance = distance
+					target_slot = slot
 	
-	# Multiple overlapping slots - find the one closest to mouse position
-	var mouse_pos = get_global_mouse_position()
-	var closest_slot = null
-	var closest_distance = INF
-	
-	for slot in overlapping_slots:
-		if slot.has_method("get_distance_to_point"):
-			var distance = slot.get_distance_to_point(
-				mouse_pos
-			)
-			if distance < closest_distance:
-				closest_distance = distance
-				closest_slot = slot
-		else:
-			# Fallback: use distance from global_position if method doesn't exist
-			var distance = slot.global_position.distance_to(mouse_pos)
-			if distance < closest_distance:
-				closest_distance = distance
-				closest_slot = slot
-	
-	# Snap to the closest slot
-	if closest_slot and closest_slot.has_method("snap_card"):
-		closest_slot.snap_card(card)
+	# Snap to the target slot (this will handle swapping automatically)
+	if target_slot and target_slot.has_method("snap_card"):
+		# If card was in a different slot, remove it from that slot first
+		if original_slot and original_slot != target_slot:
+			if original_slot.has_method("remove_card"):
+				original_slot.remove_card(card)
+		
+		# Snap the card (swaps if slot is occupied)
+		var swapped_card = target_slot.snap_card(card)
+		
+		# Ensure the card that was just snapped is properly set in the slot
+		# and NOT in hand
+		if card:
+			var player_hand = main_node.get_node_or_null("PlayerHand")
+			if player_hand and player_hand.has_method("remove_card_from_hand"):
+				# Remove from hand if it was there (will be no-op if not in hand)
+				player_hand.remove_card_from_hand(card)
+		
+		# Handle the swapped card
+		if swapped_card and swapped_card != card:
+			# The swapped card needs to go somewhere
+			# If the original card was from hand, send swapped card to hand
+			# If the original card was from another slot, swapped card goes there
+			if original_slot and original_slot.has_method("snap_card"):
+				# Card was moved from one slot to another - swap positions
+				original_slot.snap_card(swapped_card)
+				# Update starting position for the swapped card
+				swapped_card.set_meta("starting_position", original_slot.global_position)
+			else:
+				# Card was from hand - send swapped card back to hand
+				# The swapped card's slot reference was already cleared by snap_card
+				# Just add it to hand
+				var player_hand = main_node.get_node_or_null("PlayerHand")
+				if player_hand and player_hand.has_method("add_card_to_hand_at_index"):
+					# Make sure it's not already in hand
+					if not player_hand.has_method("is_card_in_hand") or not player_hand.is_card_in_hand(swapped_card):
+						# Use mouse position to calculate hand index for better placement
+						var mouse_pos = get_global_mouse_position()
+						var target_index = 0
+						if player_hand.has_method("calculate_index_from_x"):
+							target_index = player_hand.calculate_index_from_x(mouse_pos.x)
+						player_hand.add_card_to_hand_at_index(swapped_card, target_index)
+					# Update starting position will be set when hand positions update
+		
+		# Update starting position for the card that was snapped
+		card.set_meta("starting_position", target_slot.global_position)
+		
 		print(
-			"[CardManager] Card snapped to closest slot: ",
-			closest_slot.name,
-			" (distance: ",
-			closest_distance,
+			"[CardManager] Card snapped to slot: ",
+			target_slot.name,
+			" (swapped: ",
+			swapped_card != null and swapped_card != card,
 			")"
 		)
 		return true
