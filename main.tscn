@@ -1,10 +1,11 @@
-[gd_scene load_steps=8 format=3 uid="uid://chixb0wso8nu8"]
+[gd_scene load_steps=9 format=3 uid="uid://chixb0wso8nu8"]
 
 [ext_resource type="Script" uid="uid://fqnicuhsiixx" path="res://scripts/CardManager.gd" id="1_0xm2m"]
 [ext_resource type="Script" uid="uid://c4soc5y2d1gor" path="res://scripts/PlayerHand.gd" id="4_1bvp3"]
 [ext_resource type="Script" uid="uid://c0abjvsmtgrn1" path="res://scripts/Deck.gd" id="4_7mycd"]
 [ext_resource type="Texture2D" uid="uid://bagx7xvwq10t4" path="res://assets/art/cards/CardBack.png" id="4_lquwl"]
 [ext_resource type="Script" uid="uid://dk7tvi3rjxdqw" path="res://scripts/InputManager.gd" id="6_272bh"]
+[ext_resource type="PackedScene" uid="uid://beobyodqvdcrg" path="res://scenes/DeckView.tscn" id="7_272bh"]
 [ext_resource type="Script" uid="uid://c3o75f7d402w8" path="res://scripts/PlayerDeck.gd" id="7_playerdeck"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_7mycd"]
@@ -36,3 +37,14 @@ shape = SubResource("RectangleShape2D_7mycd")
 
 [node name="InputManager" type="Node2D" parent="."]
 script = ExtResource("6_272bh")
+
+[node name="DeckView" parent="." instance=ExtResource("7_272bh")]
+visible = false
+
+[node name="ViewDeckButton" type="Button" parent="."]
+custom_minimum_size = Vector2(120, 40)
+offset_left = 1455.0
+offset_top = 940.0
+offset_right = 1575.0
+offset_bottom = 980.0
+text = "Deck"

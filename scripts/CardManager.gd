@@ -10,6 +10,9 @@ const CARD_SLOT_START_X: float = 400.0  # Starting X position for first slot
 const CARD_SLOT_Y: float = 350.0  # Y position for all slots
 const CARD_SLOT_SPACING: float = 170.0  # Horizontal spacing between slots
 
+@onready var deck_view = $"../DeckView"
+@onready var view_deck_button = $"../ViewDeckButton"
+
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	# Find InputManager
@@ -34,7 +37,11 @@ func _ready() -> void:
 	# Connect to each card's Area2D
 	for card in card_nodes:
 		_connect_card(card)
+		
+	view_deck_button.pressed.connect(_on_view_deck_pressed)
 
+func _on_view_deck_pressed():
+	deck_view.open()
 # Public function to register a card (can be called from other scripts)
 func register_card(card: Node2D) -> void:
 	_connect_card(card)
