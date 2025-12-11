@@ -3,9 +3,11 @@ extends Node2D
 var is_dragging: bool = false
 var drag_offset: Vector2 = Vector2.ZERO
 var dragged_card: Node2D = null  # Track which specific card is being dragged
+var dragged_card_start_position: Vector2 = Vector2.ZERO  # Store original position before drag
 var hovered_card: Node2D = null  # Track which card is currently being hovered
 const HOVER_SCALE: float = 1.15  # Scale factor when hovering (15% bigger)
 const HOVER_ANIMATION_DURATION: float = 0.15  # Animation duration in seconds
+const RETURN_ANIMATION_DURATION: float = 0.2  # Animation duration for returning card
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
@@ -82,10 +84,15 @@ func _process(_delta: float) -> void:
 		if dragged_card:
 			print("[CardManager] _process() - DRAGGING STOPPED (mouse released globally) for ",
 				dragged_card.name)
-			_check_and_snap_to_slot(dragged_card)
+			var was_snapped = _check_and_snap_to_slot(dragged_card)
+			if was_snapped:
+				# Notify PlayerHand to remove the card and close the gap
+				_notify_card_played(dragged_card)
+			else:
+				_return_card_to_start_position(dragged_card)
 			_restore_card_z_index(dragged_card)
-		is_dragging = false
-		dragged_card = null
+			is_dragging = false
+			dragged_card = null
 
 
 # Handle input events from the Area2D
@@ -107,6 +114,11 @@ func _on_card_input_event(
 				if not is_dragging:
 					is_dragging = true
 					dragged_card = card
+					# Store the starting position before dragging
+					if card.has_meta("starting_position"):
+						dragged_card_start_position = card.get_meta("starting_position")
+					else:
+						dragged_card_start_position = card.position
 					var mouse_pos = get_global_mouse_position()
 					drag_offset = mouse_pos - card.global_position
 					# Reset hover effect when starting to drag
@@ -119,7 +131,12 @@ func _on_card_input_event(
 					card.name)
 				# Only stop dragging if this is the card we're dragging
 				if is_dragging and dragged_card == card:
-					_check_and_snap_to_slot(card)
+					var was_snapped = _check_and_snap_to_slot(card)
+					if was_snapped:
+						# Notify PlayerHand to remove the card and close the gap
+						_notify_card_played(card)
+					else:
+						_return_card_to_start_position(card)
 					_restore_card_z_index(card)
 					is_dragging = false
 					dragged_card = null
@@ -127,9 +144,10 @@ func _on_card_input_event(
 						card.name)
 
 # Check if a card overlaps any CardSlot and snap it if it does
-func _check_and_snap_to_slot(card: Node2D) -> void:
+# Returns true if the card was snapped to a slot, false otherwise
+func _check_and_snap_to_slot(card: Node2D) -> bool:
 	if not card:
-		return
+		return false
 	
 	# Find all CardSlot nodes in the scene
 	# (they should be siblings of CardManager or in parent)
@@ -144,15 +162,15 @@ func _check_and_snap_to_slot(card: Node2D) -> void:
 			if slot.is_card_overlapping(card):
 				overlapping_slots.append(slot)
 	
-	# If no overlapping slots, return
+	# If no overlapping slots, return false
 	if overlapping_slots.is_empty():
-		return
+		return false
 	
 	# If only one overlapping slot, snap to it
 	if overlapping_slots.size() == 1:
 		overlapping_slots[0].snap_card(card)
 		print("[CardManager] Card snapped to slot: ", overlapping_slots[0].name)
-		return
+		return true
 	
 	# Multiple overlapping slots - find the one closest to mouse position
 	var mouse_pos = get_global_mouse_position()
@@ -182,6 +200,9 @@ func _check_and_snap_to_slot(card: Node2D) -> void:
 			closest_distance,
 			")"
 		)
+		return true
+	
+	return false
 
 # Recursively find all CardSlot nodes in the scene tree
 func _find_card_slots(node: Node, result: Array) -> void:
@@ -277,6 +298,34 @@ func _restore_card_z_index(card: Node2D) -> void:
 		var original_z = card.get_meta("original_z_index")
 		card.z_index = original_z
 		card.remove_meta("original_z_index")
+
+# Return a card to its starting position with animation
+func _return_card_to_start_position(card: Node2D) -> void:
+	if not card or not is_instance_valid(card):
+		return
+	
+	# Use the stored starting position from when drag began
+	var target_position = dragged_card_start_position
+	
+	# Animate the card back to its starting position
+	var tween = get_tree().create_tween()
+	tween.set_ease(Tween.EASE_OUT)
+	tween.set_trans(Tween.TRANS_BACK)
+	tween.tween_property(card, "position", target_position, RETURN_ANIMATION_DURATION)
+	print("[CardManager] Returning card to start position: ", card.name, " -> ", target_position)
+
+# Notify PlayerHand that a card was played (snapped to a slot)
+func _notify_card_played(card: Node2D) -> void:
+	if not card:
+		return
+	
+	# Find PlayerHand node (sibling of CardManager or in parent)
+	var main_node = get_parent() if get_parent() else get_tree().current_scene
+	var player_hand = main_node.get_node_or_null("PlayerHand")
+	
+	if player_hand and player_hand.has_method("remove_card_from_hand"):
+		player_hand.remove_card_from_hand(card)
+		print("[CardManager] Notified PlayerHand that card was played: ", card.name)
 
 # Set cursor to hand or arrow
 func _set_cursor_hand(is_hand: bool) -> void:

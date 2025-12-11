@@ -1,6 +1,6 @@
 extends Node2D
 
-const HAND_COUNT = 8
+const HAND_COUNT = 10
 const CARD_SCENE_PATH = "res://scenes/Card.tscn"
 const CARD_WIDTH = 100
 const HAND_Y_POSITION = 800
@@ -29,6 +29,8 @@ func update_hand_positions():
 	for i in range(player_hand.size()):
 		var new_position = Vector2(calculate_card_position(i), HAND_Y_POSITION)
 		var card = player_hand[i]
+		# Store starting position as meta data (proper way to attach data to nodes)
+		card.set_meta("starting_position", new_position)
 		animate_card_to_position(card, new_position)
 		
 func calculate_card_position(index):
@@ -39,3 +41,10 @@ func calculate_card_position(index):
 func animate_card_to_position(card, new_position):
 	var tween = get_tree().create_tween()
 	tween.tween_property(card, "position", new_position, 0.1)
+
+# Remove a card from the hand and update positions to close the gap
+func remove_card_from_hand(card):
+	if card in player_hand:
+		player_hand.erase(card)
+		update_hand_positions()
+		print("[PlayerHand] Removed card from hand: ", card.name, " | Hand size: ", player_hand.size())
