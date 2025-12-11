@@ -6,6 +6,9 @@ var dragged_card: Node2D = null  # Track which specific card is being dragged
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
+	# Connect to child_added signal to handle dynamically added cards
+	child_entered_tree.connect(_on_child_added)
+	
 	# Find all card nodes (they all start with "Card")
 	var card_nodes = []
 	for child in get_children():
@@ -14,19 +17,45 @@ func _ready() -> void:
 	
 	print("[CardManager] _ready() - Found ", card_nodes.size(), " card(s)")
 	
-	# Connect to each card's Area2D using a lambda that captures the card reference
+	# Connect to each card's Area2D
 	for card in card_nodes:
-		var card_area = card.get_node_or_null("Area2D")
-		if card_area:
-			# Ensure the Area2D can receive input
-			card_area.input_pickable = true
-			# Connect to the input_event signal with a lambda that captures the card
-			card_area.input_event.connect(func(viewport: Node, event: InputEvent, shape_idx: int):
+		_connect_card(card)
+
+# Public function to register a card (can be called from other scripts)
+func register_card(card: Node2D) -> void:
+	_connect_card(card)
+
+# Connect a card to the drag system
+func _connect_card(card: Node2D) -> void:
+	if not card or not is_instance_valid(card):
+		return
+	
+	# Wait a frame if the card was just added to ensure it's fully initialized
+	if not card.is_inside_tree():
+		await card.tree_entered
+	
+	var card_area = card.get_node_or_null("Area2D")
+	if card_area:
+		# Ensure the Area2D can receive input
+		card_area.input_pickable = true
+		
+		# Connect to the input_event signal with a lambda that captures the card
+		# Each card gets its own unique connection, so no need to check for duplicates
+		card_area.input_event.connect(
+			func(viewport: Node, event: InputEvent, shape_idx: int):
 				_on_card_input_event(card, viewport, event, shape_idx)
-			)
-			print("[CardManager] _ready() - Connected to Area2D for card: ", card.name)
-		else:
-			print("[CardManager] ERROR - CardArea not found for card: ", card.name)
+		)
+		print("[CardManager] Connected to Area2D for card: ", card.name)
+	else:
+		print("[CardManager] ERROR - Area2D not found for card: ", card.name)
+
+# Called when a child node is added to CardManager
+func _on_child_added(node: Node) -> void:
+	# Check if it's a card (starts with "Card")
+	if node.name.begins_with("Card"):
+		# Wait a frame to ensure the node is fully initialized
+		await get_tree().process_frame
+		_connect_card(node)
 
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -90,7 +119,8 @@ func _check_and_snap_to_slot(card: Node2D) -> void:
 	if not card:
 		return
 	
-	# Find all CardSlot nodes in the scene (they should be siblings of CardManager or in parent)
+	# Find all CardSlot nodes in the scene
+	# (they should be siblings of CardManager or in parent)
 	var main_node = get_parent() if get_parent() else get_tree().current_scene
 	var card_slots = []
 	_find_card_slots(main_node, card_slots)
@@ -98,8 +128,9 @@ func _check_and_snap_to_slot(card: Node2D) -> void:
 	# Find all slots that overlap with the card
 	var overlapping_slots = []
 	for slot in card_slots:
-		if slot.has_method("is_card_overlapping") and slot.is_card_overlapping(card):
-			overlapping_slots.append(slot)
+		if slot.has_method("is_card_overlapping"):
+			if slot.is_card_overlapping(card):
+				overlapping_slots.append(slot)
 	
 	# If no overlapping slots, return
 	if overlapping_slots.is_empty():
@@ -132,12 +163,20 @@ func _check_and_snap_to_slot(card: Node2D) -> void:
 	# Snap to the closest slot
 	if closest_slot and closest_slot.has_method("snap_card"):
 		closest_slot.snap_card(card)
-		print("[CardManager] Card snapped to closest slot: ", closest_slot.name, " (distance: ", closest_distance, ")")
+		print(
+			"[CardManager] Card snapped to closest slot: ",
+			closest_slot.name,
+			" (distance: ",
+			closest_distance,
+			")"
+		)
 
 # Recursively find all CardSlot nodes in the scene tree
 func _find_card_slots(node: Node, result: Array) -> void:
 	# Check if this node is a CardSlot by name or by script
-	if node.name.begins_with("CardSlot") or (node.get_script() and node.has_method("snap_card")):
+	var is_card_slot = node.name.begins_with("CardSlot")
+	var has_snap_method = node.get_script() and node.has_method("snap_card")
+	if is_card_slot or has_snap_method:
 		result.append(node)
 	
 	for child in node.get_children():
