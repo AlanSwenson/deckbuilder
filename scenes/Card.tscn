@@ -18,3 +18,16 @@ shape = SubResource("RectangleShape2D_ig7tw")
 
 [node name="CardImage" type="Sprite2D" parent="."]
 texture = ExtResource("1_dd2wi")
+
+[node name="CardNumberLabel" type="Label" parent="."]
+offset_left = -30.0
+offset_top = -105.0
+offset_right = 30.0
+offset_bottom = -75.0
+theme_override_colors/font_color = Color(1, 1, 1, 1)
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 4
+theme_override_font_sizes/font_size = 36
+text = "0"
+horizontal_alignment = 1
+vertical_alignment = 1

@@ -4,10 +4,13 @@ var is_dragging: bool = false
 var drag_offset: Vector2 = Vector2.ZERO
 var dragged_card: Node2D = null  # Track which specific card is being dragged
 var dragged_card_start_position: Vector2 = Vector2.ZERO  # Store original position before drag
+var dragged_card_initial_mouse_pos: Vector2 = Vector2.ZERO  # Mouse position when drag started
 var hovered_card: Node2D = null  # Track which card is currently being hovered
 const HOVER_SCALE: float = 1.15  # Scale factor when hovering (15% bigger)
 const HOVER_ANIMATION_DURATION: float = 0.15  # Animation duration in seconds
 const RETURN_ANIMATION_DURATION: float = 0.2  # Animation duration for returning card
+# Vertical distance threshold for reordering (pixels)
+const VERTICAL_REORDER_THRESHOLD: float = 50.0
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
@@ -74,6 +77,13 @@ func _process(_delta: float) -> void:
 	if is_dragging and dragged_card:
 		var mouse_pos = get_global_mouse_position()
 		dragged_card.global_position = mouse_pos - drag_offset
+		# Ensure dragged card stays on top while dragging
+		_keep_dragged_card_on_top()
+		
+		# Check if we should show reorder preview (horizontal movement, not too far vertically)
+		if _should_reorder_hand():
+			_update_hand_reorder_preview(mouse_pos)
+		
 		# Debug log every 60 frames while dragging
 		if Engine.get_process_frames() % 60 == 0:
 			print("[CardManager] _process() - Dragging ", dragged_card.name,
@@ -86,11 +96,27 @@ func _process(_delta: float) -> void:
 				dragged_card.name)
 			var was_snapped = _check_and_snap_to_slot(dragged_card)
 			if was_snapped:
-				# Notify PlayerHand to remove the card and close the gap
-				_notify_card_played(dragged_card)
+				# Check if card was in hand - if so, remove it
+				if _is_card_in_hand(dragged_card):
+					_notify_card_played(dragged_card)
+			elif _is_mouse_over_hand_area():
+				# Card released over hand area - add it back if not already in hand
+				if not _is_card_in_hand(dragged_card):
+					_add_card_to_hand(dragged_card)
+				elif _should_reorder_hand():
+					# Reorder the hand based on horizontal position
+					var mouse_pos = get_global_mouse_position()
+					_reorder_hand_on_release(mouse_pos)
+				else:
+					_return_card_to_start_position(dragged_card)
+			elif _should_reorder_hand():
+				# Reorder the hand based on horizontal position
+				var mouse_pos = get_global_mouse_position()
+				_reorder_hand_on_release(mouse_pos)
 			else:
 				_return_card_to_start_position(dragged_card)
-			_restore_card_z_index(dragged_card)
+			# Don't restore z_index here - let hand update handle it properly
+			# _restore_card_z_index(dragged_card) - commented out, hand update will set correct z_index
 			is_dragging = false
 			dragged_card = null
 
@@ -120,7 +146,10 @@ func _on_card_input_event(
 					else:
 						dragged_card_start_position = card.position
 					var mouse_pos = get_global_mouse_position()
+					dragged_card_initial_mouse_pos = mouse_pos
 					drag_offset = mouse_pos - card.global_position
+					# Bring card to top immediately when dragging starts
+					_bring_dragged_card_to_top()
 					# Reset hover effect when starting to drag
 					_reset_hover_effect()
 					print("[CardManager] _on_card_input_event() - DRAGGING STARTED for ",
@@ -133,11 +162,27 @@ func _on_card_input_event(
 				if is_dragging and dragged_card == card:
 					var was_snapped = _check_and_snap_to_slot(card)
 					if was_snapped:
-						# Notify PlayerHand to remove the card and close the gap
-						_notify_card_played(card)
+						# Check if card was in hand - if so, remove it
+						if _is_card_in_hand(card):
+							_notify_card_played(card)
+					elif _is_mouse_over_hand_area():
+						# Card released over hand area - add it back if not already in hand
+						if not _is_card_in_hand(card):
+							_add_card_to_hand(card)
+						elif _should_reorder_hand():
+							# Reorder the hand based on horizontal position
+							var mouse_pos = get_global_mouse_position()
+							_reorder_hand_on_release(mouse_pos)
+						else:
+							_return_card_to_start_position(card)
+					elif _should_reorder_hand():
+						# Reorder the hand based on horizontal position
+						var mouse_pos = get_global_mouse_position()
+						_reorder_hand_on_release(mouse_pos)
 					else:
 						_return_card_to_start_position(card)
-					_restore_card_z_index(card)
+					# Don't restore z_index here - let hand update handle it properly
+					# _restore_card_z_index(card) - commented out, hand update will set correct z_index
 					is_dragging = false
 					dragged_card = null
 					print("[CardManager] _on_card_input_event() - DRAGGING STOPPED for ",
@@ -277,9 +322,34 @@ func _reset_card_scale(card: Node2D) -> void:
 		tween.tween_property(card, "scale", Vector2.ONE, HOVER_ANIMATION_DURATION)
 		tween.tween_callback(func(): _restore_card_z_index(card))
 
-# Bring card to front by adjusting z_index
+# Bring dragged card to top immediately when dragging starts
+func _bring_dragged_card_to_top() -> void:
+	if not dragged_card or not is_instance_valid(dragged_card):
+		return
+	
+	# Store original z_index if not stored
+	if not dragged_card.has_meta("dragged_original_z_index"):
+		dragged_card.set_meta("dragged_original_z_index", dragged_card.z_index)
+	
+	# Bring to very top (high z_index so it's above everything)
+	dragged_card.z_index = 1000
+
+# Keep dragged card on top while dragging
+func _keep_dragged_card_on_top() -> void:
+	if not dragged_card or not is_instance_valid(dragged_card):
+		return
+	
+	# Ensure it stays on top
+	if dragged_card.z_index < 1000:
+		dragged_card.z_index = 1000
+
+# Bring card to front by adjusting z_index (for hover effect)
 func _bring_card_to_front(card: Node2D) -> void:
 	if not card or not is_instance_valid(card):
+		return
+	
+	# Don't change z_index if this card is being dragged (it's already on top)
+	if card == dragged_card:
 		return
 	
 	# Store original z_index if not stored
@@ -294,6 +364,15 @@ func _restore_card_z_index(card: Node2D) -> void:
 	if not card or not is_instance_valid(card):
 		return
 	
+	# Restore dragged card's original z_index
+	if card.has_meta("dragged_original_z_index"):
+		var original_z = card.get_meta("dragged_original_z_index")
+		card.z_index = original_z
+		card.remove_meta("dragged_original_z_index")
+		# After restoring, let hand update set the proper z_index based on position
+		return
+	
+	# Restore hover effect's original z_index
 	if card.has_meta("original_z_index"):
 		var original_z = card.get_meta("original_z_index")
 		card.z_index = original_z
@@ -313,6 +392,86 @@ func _return_card_to_start_position(card: Node2D) -> void:
 	tween.set_trans(Tween.TRANS_BACK)
 	tween.tween_property(card, "position", target_position, RETURN_ANIMATION_DURATION)
 	print("[CardManager] Returning card to start position: ", card.name, " -> ", target_position)
+
+# Check if we should reorder the hand (horizontal movement, not too far vertically)
+func _should_reorder_hand() -> bool:
+	if not is_dragging or not dragged_card:
+		return false
+	
+	# Check if the card overlaps with the hand area
+	var main_node = get_parent() if get_parent() else get_tree().current_scene
+	var player_hand = main_node.get_node_or_null("PlayerHand")
+	if not player_hand:
+		return false
+	
+	# Check if card overlaps with hand area (any part of card touching hand)
+	if player_hand.has_method("does_card_overlap_hand_area"):
+		return player_hand.does_card_overlap_hand_area(dragged_card)
+	
+	# Fallback: check if card is in hand
+	if player_hand.has_method("is_card_in_hand"):
+		return player_hand.is_card_in_hand(dragged_card)
+	
+	return false
+
+# Update hand reorder preview while dragging (show where card would be placed)
+func _update_hand_reorder_preview(_mouse_pos: Vector2) -> void:
+	# This could show visual feedback, but for now we'll just handle it on release
+	pass
+
+# Reorder the hand when card is released
+func _reorder_hand_on_release(mouse_pos: Vector2) -> void:
+	if not dragged_card:
+		return
+	
+	var main_node = get_parent() if get_parent() else get_tree().current_scene
+	var player_hand = main_node.get_node_or_null("PlayerHand")
+	if not player_hand or not player_hand.has_method("reorder_card_in_hand"):
+		_return_card_to_start_position(dragged_card)
+		return
+	
+	# Calculate target index based on horizontal mouse position
+	var target_index = player_hand.calculate_index_from_x(mouse_pos.x)
+	player_hand.reorder_card_in_hand(dragged_card, target_index)
+	print("[CardManager] Reordered card in hand: ", dragged_card.name, " to index: ", target_index)
+
+# Check if a card is in the player's hand
+func _is_card_in_hand(card: Node2D) -> bool:
+	if not card:
+		return false
+	
+	var main_node = get_parent() if get_parent() else get_tree().current_scene
+	var player_hand = main_node.get_node_or_null("PlayerHand")
+	
+	if player_hand and player_hand.has_method("is_card_in_hand"):
+		return player_hand.is_card_in_hand(card)
+	return false
+
+# Check if mouse is over the hand area
+func _is_mouse_over_hand_area() -> bool:
+	var main_node = get_parent() if get_parent() else get_tree().current_scene
+	var player_hand = main_node.get_node_or_null("PlayerHand")
+	
+	if not player_hand or not player_hand.has_method("is_position_in_hand_area"):
+		return false
+	
+	var mouse_pos = get_global_mouse_position()
+	return player_hand.is_position_in_hand_area(mouse_pos)
+
+# Add a card to the hand
+func _add_card_to_hand(card: Node2D) -> void:
+	if not card:
+		return
+	
+	var main_node = get_parent() if get_parent() else get_tree().current_scene
+	var player_hand = main_node.get_node_or_null("PlayerHand")
+	
+	if player_hand and player_hand.has_method("add_card_to_hand"):
+		# Calculate target index based on mouse position
+		var mouse_pos = get_global_mouse_position()
+		var target_index = player_hand.calculate_index_from_x(mouse_pos.x)
+		player_hand.add_card_to_hand_at_index(card, target_index)
+		print("[CardManager] Added card to hand: ", card.name, " at index: ", target_index)
 
 # Notify PlayerHand that a card was played (snapped to a slot)
 func _notify_card_played(card: Node2D) -> void:
