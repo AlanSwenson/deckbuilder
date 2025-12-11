@@ -3,6 +3,7 @@ extends Node2D
 # Player's deck of 30 cards
 var deck: Array[CardData] = []
 var discard_pile: Array[CardData] = []
+var original_deck: Array[CardData] = []  # Store the original full deck
 
 func _ready() -> void:
 	# Initialize the deck with 30 cards from example_cards
@@ -12,6 +13,8 @@ func _ready() -> void:
 func initialize_deck() -> void:
 	# Get the starter deck from ExampleCards
 	deck = ExampleCards.create_starter_deck()
+	# Store a copy of the original deck
+	original_deck = deck.duplicate(true)
 	# Shuffle the deck
 	shuffle_deck()
 	print("[PlayerDeck] Initialized deck with ", deck.size(), " cards")
