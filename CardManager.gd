@@ -45,6 +45,7 @@ func _process(_delta: float) -> void:
 		if dragged_card:
 			print("[CardManager] _process() - DRAGGING STOPPED (mouse released globally) for ",
 				dragged_card.name)
+			_check_and_snap_to_slot(dragged_card)
 		is_dragging = false
 		dragged_card = null
 
@@ -78,7 +79,66 @@ func _on_card_input_event(
 					card.name)
 				# Only stop dragging if this is the card we're dragging
 				if is_dragging and dragged_card == card:
+					_check_and_snap_to_slot(card)
 					is_dragging = false
 					dragged_card = null
 					print("[CardManager] _on_card_input_event() - DRAGGING STOPPED for ",
 						card.name)
+
+# Check if a card overlaps any CardSlot and snap it if it does
+func _check_and_snap_to_slot(card: Node2D) -> void:
+	if not card:
+		return
+	
+	# Find all CardSlot nodes in the scene (they should be siblings of CardManager or in parent)
+	var main_node = get_parent() if get_parent() else get_tree().current_scene
+	var card_slots = []
+	_find_card_slots(main_node, card_slots)
+	
+	# Find all slots that overlap with the card
+	var overlapping_slots = []
+	for slot in card_slots:
+		if slot.has_method("is_card_overlapping") and slot.is_card_overlapping(card):
+			overlapping_slots.append(slot)
+	
+	# If no overlapping slots, return
+	if overlapping_slots.is_empty():
+		return
+	
+	# If only one overlapping slot, snap to it
+	if overlapping_slots.size() == 1:
+		overlapping_slots[0].snap_card(card)
+		print("[CardManager] Card snapped to slot: ", overlapping_slots[0].name)
+		return
+	
+	# Multiple overlapping slots - find the one closest to mouse position
+	var mouse_pos = get_global_mouse_position()
+	var closest_slot = null
+	var closest_distance = INF
+	
+	for slot in overlapping_slots:
+		if slot.has_method("get_distance_to_point"):
+			var distance = slot.get_distance_to_point(mouse_pos)
+			if distance < closest_distance:
+				closest_distance = distance
+				closest_slot = slot
+		else:
+			# Fallback: use distance from global_position if method doesn't exist
+			var distance = slot.global_position.distance_to(mouse_pos)
+			if distance < closest_distance:
+				closest_distance = distance
+				closest_slot = slot
+	
+	# Snap to the closest slot
+	if closest_slot and closest_slot.has_method("snap_card"):
+		closest_slot.snap_card(card)
+		print("[CardManager] Card snapped to closest slot: ", closest_slot.name, " (distance: ", closest_distance, ")")
+
+# Recursively find all CardSlot nodes in the scene tree
+func _find_card_slots(node: Node, result: Array) -> void:
+	# Check if this node is a CardSlot by name or by script
+	if node.name.begins_with("CardSlot") or (node.get_script() and node.has_method("snap_card")):
+		result.append(node)
+	
+	for child in node.get_children():
+		_find_card_slots(child, result)
