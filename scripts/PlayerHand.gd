@@ -120,6 +120,26 @@ func animate_card_to_position(card, new_position):
 func is_card_in_hand(card) -> bool:
 	return card in player_hand
 
+# Get a card's index in the hand
+func get_card_index(card) -> int:
+	if card in player_hand:
+		return player_hand.find(card)
+	return -1
+
+# Update a single card's z_index based on its position in hand
+func update_card_z_index(card) -> void:
+	if not card in player_hand:
+		return
+	
+	var card_index = player_hand.find(card)
+	if card_index == -1:
+		return
+	
+	# Calculate correct z_index based on position (same logic as update_hand_positions)
+	var hand_size = player_hand.size()
+	var z_index_value = (hand_size - card_index) * 10
+	card.z_index = z_index_value
+
 # Calculate target index in hand from X position
 func calculate_index_from_x(x_pos: float) -> int:
 	var hand_size = player_hand.size()
