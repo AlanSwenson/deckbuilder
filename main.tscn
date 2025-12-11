@@ -1,28 +1,25 @@
 [gd_scene load_steps=4 format=3 uid="uid://chixb0wso8nu8"]
 
 [ext_resource type="Script" uid="uid://fqnicuhsiixx" path="res://CardManager.gd" id="1_0xm2m"]
-[ext_resource type="PackedScene" uid="uid://b8bgpp1c4vvpj" path="res://Card.tscn" id="2_0xm2m"]
-[ext_resource type="PackedScene" uid="uid://biyfjgryh0vy1" path="res://CardSlot.tscn" id="3_h2yge"]
+[ext_resource type="PackedScene" uid="uid://biyfjgryh0vy1" path="res://scenes/CardSlot.tscn" id="3_h2yge"]
+[ext_resource type="Script" uid="uid://c4soc5y2d1gor" path="res://PlayerHand.gd" id="4_1bvp3"]
 
 [node name="Main" type="Node2D"]
 
 [node name="CardManager" type="Node2D" parent="."]
 script = ExtResource("1_0xm2m")
 
-[node name="Card" parent="CardManager" instance=ExtResource("2_0xm2m")]
-position = Vector2(676, 825)
-
-[node name="Card2" parent="CardManager" instance=ExtResource("2_0xm2m")]
-position = Vector2(852, 830)
-
 [node name="CardSlot" parent="." instance=ExtResource("3_h2yge")]
 z_index = -1
 position = Vector2(486, 519)
 
-[node name="CardSlot" parent="CardSlot" instance=ExtResource("3_h2yge")]
+[node name="CardSlot2" parent="." instance=ExtResource("3_h2yge")]
 z_index = -1
-position = Vector2(172, -4)
+position = Vector2(833, 518)
 
-[node name="CardSlot" parent="CardSlot/CardSlot" instance=ExtResource("3_h2yge")]
+[node name="CardSlot3" parent="." instance=ExtResource("3_h2yge")]
 z_index = -1
-position = Vector2(175, 3)
+position = Vector2(658, 515)
+
+[node name="PlayerHand" type="Node2D" parent="."]
+script = ExtResource("4_1bvp3")
