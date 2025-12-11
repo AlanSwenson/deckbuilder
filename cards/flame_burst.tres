@@ -1,6 +1,5 @@
-[gd_resource type="Resource" script_class="CardData" load_steps=4 format=3 uid="uid://b8plwrtowr0ul"]
+[gd_resource type="Resource" script_class="CardData" load_steps=3 format=3 uid="uid://b8plwrtowr0ul"]
 
-[ext_resource type="Texture2D" uid="uid://d0dmfhhwk2kno" path="res://card-placeholder.png" id="1_adt8n"]
 [ext_resource type="Script" uid="uid://bso0mmiq122ve" path="res://scripts/card_effect.gd" id="1_f08o4"]
 [ext_resource type="Script" uid="uid://b2c8u2ga1him2" path="res://scripts/card_data.gd" id="2_adt8n"]
 
@@ -21,5 +20,4 @@ combo_block_bonus = 0
 bonus_if_facing_empty = false
 bonus_if_adjacent_empty = false
 ignores_block = false
-card_art = ExtResource("1_adt8n")
 metadata/_custom_type_script = "uid://b2c8u2ga1him2"
