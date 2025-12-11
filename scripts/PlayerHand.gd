@@ -3,7 +3,7 @@ extends Node2D
 const HAND_COUNT = 10
 const CARD_SCENE_PATH = "res://scenes/Card.tscn"
 const CARD_WIDTH = 100
-const HAND_Y_POSITION = 800
+const HAND_Y_POSITION = 890
 
 var player_hand = []
 var center_screen_x
