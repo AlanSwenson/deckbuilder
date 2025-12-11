@@ -11,16 +11,16 @@ func _ready() -> void:
 		area.area_exited.connect(_on_area_exited)
 
 func _on_area_entered(area: Area2D) -> void:
-	# Check if the area belongs to a card
+	# Check if the area belongs to a card (player or enemy)
 	var card = area.get_parent()
-	if card and card.name.begins_with("Card"):
+	if card and (card.name.begins_with("Card") or card.name.begins_with("EnemyCard")):
 		if area not in overlapping_cards:
 			overlapping_cards.append(area)
 			print("[CardSlot] Card entered slot: ", card.name)
 
 func _on_area_exited(area: Area2D) -> void:
 	var card = area.get_parent()
-	if card and card.name.begins_with("Card"):
+	if card and (card.name.begins_with("Card") or card.name.begins_with("EnemyCard")):
 		if area in overlapping_cards:
 			overlapping_cards.erase(area)
 			print("[CardSlot] Card exited slot: ", card.name)

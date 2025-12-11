@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3 uid="uid://chixb0wso8nu8"]
+[gd_scene load_steps=11 format=3 uid="uid://chixb0wso8nu8"]
 
 [ext_resource type="Script" uid="uid://fqnicuhsiixx" path="res://scripts/CardManager.gd" id="1_0xm2m"]
 [ext_resource type="Script" uid="uid://c4soc5y2d1gor" path="res://scripts/PlayerHand.gd" id="4_1bvp3"]
@@ -7,6 +7,8 @@
 [ext_resource type="Script" uid="uid://dk7tvi3rjxdqw" path="res://scripts/InputManager.gd" id="6_272bh"]
 [ext_resource type="PackedScene" uid="uid://beobyodqvdcrg" path="res://scenes/DeckView.tscn" id="7_272bh"]
 [ext_resource type="Script" uid="uid://c3o75f7d402w8" path="res://scripts/PlayerDeck.gd" id="7_playerdeck"]
+[ext_resource type="Script" uid="uid://nbt330y7nasy" path="res://scripts/EnemyDeck.gd" id="8_enemydeck"]
+[ext_resource type="Script" uid="uid://cxe2a4nswm1hn" path="res://scripts/TurnLogic.gd" id="9_turnlogic"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_7mycd"]
 size = Vector2(148, 209)
@@ -21,6 +23,9 @@ script = ExtResource("4_1bvp3")
 
 [node name="PlayerDeck" type="Node2D" parent="."]
 script = ExtResource("7_playerdeck")
+
+[node name="EnemyDeck" type="Node2D" parent="."]
+script = ExtResource("8_enemydeck")
 
 [node name="Deck" type="Node2D" parent="."]
 position = Vector2(150, 890)
@@ -38,6 +43,9 @@ shape = SubResource("RectangleShape2D_7mycd")
 [node name="InputManager" type="Node2D" parent="."]
 script = ExtResource("6_272bh")
 
+[node name="TurnLogic" type="Node2D" parent="."]
+script = ExtResource("9_turnlogic")
+
 [node name="DeckView" parent="." instance=ExtResource("7_272bh")]
 visible = false
 
@@ -48,3 +56,11 @@ offset_top = 940.0
 offset_right = 1575.0
 offset_bottom = 980.0
 text = "Deck"
+
+[node name="PlayHandButton" type="Button" parent="."]
+custom_minimum_size = Vector2(100, 40)
+offset_left = 1375.0
+offset_top = 880.0
+offset_right = 1575.0
+offset_bottom = 920.0
+text = "Play Hand"
