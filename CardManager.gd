@@ -3,6 +3,9 @@ extends Node2D
 var is_dragging: bool = false
 var drag_offset: Vector2 = Vector2.ZERO
 var dragged_card: Node2D = null  # Track which specific card is being dragged
+var hovered_card: Node2D = null  # Track which card is currently being hovered
+const HOVER_SCALE: float = 1.15  # Scale factor when hovering (15% bigger)
+const HOVER_ANIMATION_DURATION: float = 0.15  # Animation duration in seconds
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
@@ -45,6 +48,11 @@ func _connect_card(card: Node2D) -> void:
 			func(viewport: Node, event: InputEvent, shape_idx: int):
 				_on_card_input_event(card, viewport, event, shape_idx)
 		)
+		
+		# Connect mouse enter/exit signals for hover effects
+		card_area.mouse_entered.connect(func(): _on_card_mouse_entered(card))
+		card_area.mouse_exited.connect(func(): _on_card_mouse_exited(card))
+		
 		print("[CardManager] Connected to Area2D for card: ", card.name)
 	else:
 		print("[CardManager] ERROR - Area2D not found for card: ", card.name)
@@ -75,6 +83,7 @@ func _process(_delta: float) -> void:
 			print("[CardManager] _process() - DRAGGING STOPPED (mouse released globally) for ",
 				dragged_card.name)
 			_check_and_snap_to_slot(dragged_card)
+			_restore_card_z_index(dragged_card)
 		is_dragging = false
 		dragged_card = null
 
@@ -100,6 +109,8 @@ func _on_card_input_event(
 					dragged_card = card
 					var mouse_pos = get_global_mouse_position()
 					drag_offset = mouse_pos - card.global_position
+					# Reset hover effect when starting to drag
+					_reset_hover_effect()
 					print("[CardManager] _on_card_input_event() - DRAGGING STARTED for ",
 						card.name, " | Mouse: ", mouse_pos, " | Card: ", card.global_position,
 						" | Offset: ", drag_offset)
@@ -109,6 +120,7 @@ func _on_card_input_event(
 				# Only stop dragging if this is the card we're dragging
 				if is_dragging and dragged_card == card:
 					_check_and_snap_to_slot(card)
+					_restore_card_z_index(card)
 					is_dragging = false
 					dragged_card = null
 					print("[CardManager] _on_card_input_event() - DRAGGING STOPPED for ",
@@ -181,3 +193,94 @@ func _find_card_slots(node: Node, result: Array) -> void:
 	
 	for child in node.get_children():
 		_find_card_slots(child, result)
+
+# Handle mouse entering a card area (hover start)
+func _on_card_mouse_entered(card: Node2D) -> void:
+	# Don't apply hover effect if dragging
+	if is_dragging:
+		return
+	
+	# Reset previous hovered card if different
+	if hovered_card and hovered_card != card:
+		_reset_card_scale(hovered_card)
+	
+	hovered_card = card
+	_apply_hover_effect(card)
+	_set_cursor_hand(true)
+
+# Handle mouse exiting a card area (hover end)
+func _on_card_mouse_exited(card: Node2D) -> void:
+	# Don't reset hover if we're dragging this card
+	if is_dragging and dragged_card == card:
+		return
+	
+	if hovered_card == card:
+		_reset_hover_effect()
+
+# Apply hover effect to a card (scale up)
+func _apply_hover_effect(card: Node2D) -> void:
+	if not card or not is_instance_valid(card):
+		return
+	
+	# Store original scale if not already stored
+	if not card.has_meta("original_scale"):
+		card.set_meta("original_scale", card.scale)
+	
+	# Animate scale up
+	var tween = get_tree().create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(card, "scale", Vector2(HOVER_SCALE, HOVER_SCALE), HOVER_ANIMATION_DURATION)
+	tween.tween_callback(func(): _bring_card_to_front(card))
+
+# Reset hover effect on current hovered card
+func _reset_hover_effect() -> void:
+	if hovered_card:
+		_reset_card_scale(hovered_card)
+	hovered_card = null
+	_set_cursor_hand(false)
+
+# Reset a card's scale to original
+func _reset_card_scale(card: Node2D) -> void:
+	if not card or not is_instance_valid(card):
+		return
+	
+	if card.has_meta("original_scale"):
+		var original_scale = card.get_meta("original_scale")
+		var tween = get_tree().create_tween()
+		tween.tween_property(card, "scale", original_scale, HOVER_ANIMATION_DURATION)
+		tween.tween_callback(func(): card.remove_meta("original_scale"))
+		tween.tween_callback(func(): _restore_card_z_index(card))
+	else:
+		# Fallback: just reset to 1,1
+		var tween = get_tree().create_tween()
+		tween.tween_property(card, "scale", Vector2.ONE, HOVER_ANIMATION_DURATION)
+		tween.tween_callback(func(): _restore_card_z_index(card))
+
+# Bring card to front by adjusting z_index
+func _bring_card_to_front(card: Node2D) -> void:
+	if not card or not is_instance_valid(card):
+		return
+	
+	# Store original z_index if not stored
+	if not card.has_meta("original_z_index"):
+		card.set_meta("original_z_index", card.z_index)
+	
+	# Bring to front (higher z_index)
+	card.z_index = 100
+
+# Restore a card's z_index to its original value
+func _restore_card_z_index(card: Node2D) -> void:
+	if not card or not is_instance_valid(card):
+		return
+	
+	if card.has_meta("original_z_index"):
+		var original_z = card.get_meta("original_z_index")
+		card.z_index = original_z
+		card.remove_meta("original_z_index")
+
+# Set cursor to hand or arrow
+func _set_cursor_hand(is_hand: bool) -> void:
+	if is_hand:
+		Input.set_default_cursor_shape(Input.CURSOR_POINTING_HAND)
+	else:
+		Input.set_default_cursor_shape(Input.CURSOR_ARROW)
