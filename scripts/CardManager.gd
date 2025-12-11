@@ -7,7 +7,8 @@ var input_manager: Node2D = null
 const CARD_SLOT_COUNT: int = 5
 const CARD_SLOT_SCENE_PATH: String = "res://scenes/CardSlot.tscn"
 const CARD_SLOT_START_X: float = 400.0  # Starting X position for first slot
-const CARD_SLOT_Y: float = 350.0  # Y position for all slots
+const PLAYER_SLOT_Y: float = 550.0  # Y position for player slots (closer to player hand)
+const ENEMY_SLOT_Y: float = 250.0  # Y position for enemy slots (at top)
 const CARD_SLOT_SPACING: float = 170.0  # Horizontal spacing between slots
 
 @onready var deck_view = $"../DeckView"
@@ -20,8 +21,9 @@ func _ready() -> void:
 	if not input_manager:
 		input_manager = get_tree().current_scene.get_node_or_null("InputManager")
 
-	# Instantiate card slots
-	_create_card_slots()
+	# Instantiate player and enemy card slots
+	_create_player_slots()
+	_create_enemy_slots()
 
 	# Connect to child_added signal to handle dynamically added cards
 	child_entered_tree.connect(_on_child_added)
@@ -123,11 +125,24 @@ func check_and_snap_to_slot(card: Node2D) -> bool:
 	var card_slots = []
 	_find_card_slots(main_node, card_slots)
 	
+	# Check if this is a player card (in player hand or came from player hand)
+	var is_player_card = false
+	var player_hand = main_node.get_node_or_null("PlayerHand")
+	if player_hand and player_hand.has_method("is_card_in_hand"):
+		is_player_card = player_hand.is_card_in_hand(card)
+	# Also check if card came from a player slot
+	if not is_player_card and original_slot:
+		is_player_card = original_slot.name.begins_with("PlayerSlot")
+	
 	# Find all slots that overlap with the card
 	var overlapping_slots = []
 	for slot in card_slots:
 		if slot.has_method("is_card_overlapping"):
 			if slot.is_card_overlapping(card):
+				# Player cards can only go to player slots, enemy cards to enemy slots
+				# For now, we only have player cards, so filter out enemy slots
+				if is_player_card and slot.name.begins_with("EnemySlot"):
+					continue  # Skip enemy slots for player cards
 				overlapping_slots.append(slot)
 	
 	# If no overlapping slots, clear the card's slot reference if it had one
@@ -161,6 +176,11 @@ func check_and_snap_to_slot(card: Node2D) -> bool:
 	
 	# Snap to the target slot (this will handle swapping automatically)
 	if target_slot and target_slot.has_method("snap_card"):
+		# Safety check: prevent player cards from going to enemy slots
+		if is_player_card and target_slot.name.begins_with("EnemySlot"):
+			print("[CardManager] Player cards cannot be placed in enemy slots!")
+			return false
+		
 		# If card was in a different slot, remove it from that slot first
 		if original_slot and original_slot != target_slot:
 			if original_slot.has_method("remove_card"):
@@ -172,7 +192,6 @@ func check_and_snap_to_slot(card: Node2D) -> bool:
 		# Ensure the card that was just snapped is properly set in the slot
 		# and NOT in hand
 		if card:
-			var player_hand = main_node.get_node_or_null("PlayerHand")
 			if player_hand and player_hand.has_method("remove_card_from_hand"):
 				# Remove from hand if it was there (will be no-op if not in hand)
 				player_hand.remove_card_from_hand(card)
@@ -191,7 +210,6 @@ func check_and_snap_to_slot(card: Node2D) -> bool:
 				# Card was from hand - send swapped card back to hand
 				# The swapped card's slot reference was already cleared by snap_card
 				# Just add it to hand
-				var player_hand = main_node.get_node_or_null("PlayerHand")
 				if player_hand and player_hand.has_method("add_card_to_hand_at_index"):
 					# Make sure it's not already in hand
 					if not player_hand.has_method("is_card_in_hand") or not player_hand.is_card_in_hand(swapped_card):
@@ -220,7 +238,7 @@ func check_and_snap_to_slot(card: Node2D) -> bool:
 # Recursively find all CardSlot nodes in the scene tree
 func _find_card_slots(node: Node, result: Array) -> void:
 	# Check if this node is a CardSlot by name or by script
-	var is_card_slot = node.name.begins_with("CardSlot")
+	var is_card_slot = node.name.begins_with("CardSlot") or node.name.begins_with("PlayerSlot") or node.name.begins_with("EnemySlot")
 	var has_snap_method = (
 		node.get_script() and node.has_method("snap_card")
 	)
@@ -230,8 +248,8 @@ func _find_card_slots(node: Node, result: Array) -> void:
 	for child in node.get_children():
 		_find_card_slots(child, result)
 
-# Create and position card slots
-func _create_card_slots() -> void:
+# Create and position player card slots
+func _create_player_slots() -> void:
 	# Wait a frame to ensure viewport is ready
 	await get_tree().process_frame
 	
@@ -249,29 +267,29 @@ func _create_card_slots() -> void:
 	var viewport_size = get_viewport().get_visible_rect().size
 	# Fallback if viewport size is not available yet
 	if viewport_size.x <= 0 or viewport_size.y <= 0:
-		viewport_size = Vector2(1280, 720)  # Default viewport size
+		viewport_size = Vector2(1600, 1000)  # Default viewport size
 		print("[CardManager] Using fallback viewport size: ", viewport_size)
 	else:
 		print("[CardManager] Viewport size: ", viewport_size)
 	
 	var total_width = (CARD_SLOT_COUNT - 1) * CARD_SLOT_SPACING
 	var start_x = viewport_size.x / 2 - total_width / 2
-	print("[CardManager] Calculated start_x: ", start_x, " for ", CARD_SLOT_COUNT, " slots")
+	print("[CardManager] Calculated start_x: ", start_x, " for ", CARD_SLOT_COUNT, " player slots")
 	
-	# Create 5 card slots
+	# Create 5 player card slots
 	for i in range(CARD_SLOT_COUNT):
 		var slot = card_slot_scene.instantiate()
-		slot.name = "CardSlot" + str(i + 1)
+		slot.name = "PlayerSlot" + str(i + 1)
 		
-		# Position slots horizontally, centered on screen
+		# Position slots horizontally, centered on screen, closer to player
 		var x_position = start_x + (i * CARD_SLOT_SPACING)
-		slot.position = Vector2(x_position, CARD_SLOT_Y)
+		slot.position = Vector2(x_position, PLAYER_SLOT_Y)
 		slot.z_index = -1
 		
 		# Add slot to main scene (as sibling of CardManager)
 		main_node.add_child(slot)
 		print(
-			"[CardManager] Created card slot: ",
+			"[CardManager] Created player slot: ",
 			slot.name,
 			" at position: ",
 			slot.position,
@@ -284,13 +302,75 @@ func _create_card_slots() -> void:
 		var sprite = slot.get_node_or_null("CardSlotImage")
 		if sprite:
 			print(
-				"[CardManager] Slot ",
+				"[CardManager] Player slot ",
 				slot.name,
 				" has sprite at position: ",
 				sprite.position
 			)
 		else:
-			print("[CardManager] WARNING: Slot ", slot.name, " missing CardSlotImage!")
+			print("[CardManager] WARNING: Player slot ", slot.name, " missing CardSlotImage!")
+
+# Create and position enemy card slots
+func _create_enemy_slots() -> void:
+	# Wait a frame to ensure viewport is ready
+	await get_tree().process_frame
+	
+	var card_slot_scene = preload(CARD_SLOT_SCENE_PATH)
+	if not card_slot_scene:
+		print("[CardManager] ERROR: Could not load CardSlot scene")
+		return
+	
+	var main_node = get_parent() if get_parent() else get_tree().current_scene
+	if not main_node:
+		print("[CardManager] ERROR: Could not find main node")
+		return
+	
+	# Calculate center position to center the slots
+	var viewport_size = get_viewport().get_visible_rect().size
+	# Fallback if viewport size is not available yet
+	if viewport_size.x <= 0 or viewport_size.y <= 0:
+		viewport_size = Vector2(1600, 1000)  # Default viewport size
+		print("[CardManager] Using fallback viewport size: ", viewport_size)
+	else:
+		print("[CardManager] Viewport size: ", viewport_size)
+	
+	var total_width = (CARD_SLOT_COUNT - 1) * CARD_SLOT_SPACING
+	var start_x = viewport_size.x / 2 - total_width / 2
+	print("[CardManager] Calculated start_x: ", start_x, " for ", CARD_SLOT_COUNT, " enemy slots")
+	
+	# Create 5 enemy card slots
+	for i in range(CARD_SLOT_COUNT):
+		var slot = card_slot_scene.instantiate()
+		slot.name = "EnemySlot" + str(i + 1)
+		
+		# Position slots horizontally, centered on screen, at top for enemy
+		var x_position = start_x + (i * CARD_SLOT_SPACING)
+		slot.position = Vector2(x_position, ENEMY_SLOT_Y)
+		slot.z_index = -1
+		
+		# Add slot to main scene (as sibling of CardManager)
+		main_node.add_child(slot)
+		print(
+			"[CardManager] Created enemy slot: ",
+			slot.name,
+			" at position: ",
+			slot.position,
+			" (global: ",
+			slot.global_position,
+			")"
+		)
+		
+		# Verify the sprite exists and is visible
+		var sprite = slot.get_node_or_null("CardSlotImage")
+		if sprite:
+			print(
+				"[CardManager] Enemy slot ",
+				slot.name,
+				" has sprite at position: ",
+				sprite.position
+			)
+		else:
+			print("[CardManager] WARNING: Enemy slot ", slot.name, " missing CardSlotImage!")
 
 # Notify PlayerHand that a card was played (snapped to a slot)
 func notify_card_played(card: Node2D) -> void:

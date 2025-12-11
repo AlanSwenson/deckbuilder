@@ -276,7 +276,7 @@ func _keep_dragged_card_on_top() -> void:
 
 # Helper to find all card slots recursively
 func _find_all_card_slots(node: Node, result: Array) -> void:
-	if node.name.begins_with("CardSlot"):
+	if node.name.begins_with("CardSlot") or node.name.begins_with("PlayerSlot") or node.name.begins_with("EnemySlot"):
 		result.append(node)
 	for child in node.get_children():
 		_find_all_card_slots(child, result)
