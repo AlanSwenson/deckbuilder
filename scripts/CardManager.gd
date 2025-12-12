@@ -43,7 +43,10 @@ func _ready() -> void:
 	view_deck_button.pressed.connect(_on_view_deck_pressed)
 
 func _on_view_deck_pressed():
-	deck_view.open()
+	if deck_view and is_instance_valid(deck_view) and deck_view.has_method("open"):
+		deck_view.open()
+	else:
+		print("[CardManager] ERROR: deck_view is not valid or doesn't have open() method")
 # Public function to register a card (can be called from other scripts)
 func register_card(card: Node2D) -> void:
 	_connect_card(card)
