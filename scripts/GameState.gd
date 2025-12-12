@@ -24,6 +24,7 @@ signal game_lost()
 var player_hp_label: Label = null
 var enemy_hp_label: Label = null
 var game_over_label: Label = null
+var game_over_canvas: CanvasLayer = null
 
 func _ready() -> void:
 	# Create UI labels for HP display
@@ -51,10 +52,14 @@ func _create_hp_ui() -> void:
 	enemy_hp_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	enemy_hp_label.add_theme_constant_override("outline_size", 4)
 	
-	# Game over label (centered, initially hidden)
+	# Game over label (centered, initially hidden) - use CanvasLayer to ensure it's on top
+	game_over_canvas = CanvasLayer.new()
+	game_over_canvas.name = "GameOverCanvas"
+	add_child(game_over_canvas)
+	
 	game_over_label = Label.new()
 	game_over_label.name = "GameOverLabel"
-	add_child(game_over_label)
+	game_over_canvas.add_child(game_over_label)
 	game_over_label.position = Vector2(600, 400)
 	game_over_label.size = Vector2(400, 200)
 	game_over_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
