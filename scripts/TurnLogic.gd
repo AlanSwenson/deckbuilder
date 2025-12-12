@@ -42,7 +42,8 @@ func _ready() -> void:
 	
 	damage_calculator = DamageCalculator.new()
 	add_child(damage_calculator)
-	damage_calculator.setup(game_state)
+	var turn_history = get_parent().get_node_or_null("TurnHistory")
+	damage_calculator.setup(game_state, turn_history)
 	
 	card_discarder = CardDiscarder.new()
 	add_child(card_discarder)
@@ -70,6 +71,11 @@ func evaluate_turn() -> void:
 		if not game_state.is_game_playing():
 			print("[TurnLogic] Game is over, cannot evaluate turn")
 			return
+	
+	# Clear turn history at the start of each turn
+	var turn_history = get_parent().get_node_or_null("TurnHistory")
+	if turn_history and turn_history.has_method("clear_history"):
+		turn_history.clear_history()
 	
 	# First, determine AI cards to play and place them in enemy slots
 	# Make sure we wait for play_ai_cards to complete (including any wait for hand refill)
