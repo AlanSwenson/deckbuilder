@@ -44,4 +44,3 @@ func update_deck_count() -> void:
 		deck_count_label.text = str(count)
 	else:
 		deck_count_label.text = "?"
-
