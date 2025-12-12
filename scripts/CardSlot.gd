@@ -52,8 +52,13 @@ func snap_card(card: Node2D) -> Node2D:
 	print("[CardSlot] snap_card() called for ", card.name, " to slot ", name)
 	
 	# Don't snap cards that are being added to hand (they're animating to hand position)
-	if card.has_meta("adding_to_hand"):
+	if card and is_instance_valid(card) and card.has_meta("adding_to_hand"):
 		print("[CardSlot] BLOCKED snap - card is being added to hand: ", card.name, " | Has flag: ", card.has_meta("adding_to_hand"))
+		return null
+	
+	# Don't snap cards that are being evaluated (they're animating)
+	if card and is_instance_valid(card) and card.has_meta("evaluating_slot"):
+		print("[CardSlot] BLOCKED snap - card is being evaluated: ", card.name)
 		return null
 	
 	# Check monitoring status

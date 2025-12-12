@@ -102,9 +102,9 @@ func evaluate_turn() -> void:
 	# Clean up and prepare for next turn (but DON'T play enemy cards - that happens at the START of next turn)
 	_cleanup_turn()
 
-# Resolve the turn - calculate damage and apply it
+# Resolve the turn - slot by slot resolution
 func _resolve_turn() -> void:
-	print("[TurnLogic] Resolving turn...")
+	print("[TurnLogic] Resolving turn slot by slot...")
 	
 	# Check if game is still playing
 	if game_state and game_state.has_method("is_game_playing"):
@@ -112,20 +112,8 @@ func _resolve_turn() -> void:
 			print("[TurnLogic] Game is over, skipping turn resolution")
 			return
 	
-	# Calculate player damage to enemy
-	var player_damage = damage_calculator.calculate_player_damage()
-	if player_damage > 0:
-		if game_state and game_state.has_method("damage_enemy"):
-			game_state.damage_enemy(player_damage)
-	
-	# Calculate enemy damage to player
-	var enemy_damage = damage_calculator.calculate_enemy_damage()
-	if enemy_damage > 0:
-		if game_state and game_state.has_method("damage_player"):
-			game_state.damage_player(enemy_damage)
-	
-	# Apply healing (if any)
-	damage_calculator.apply_healing()
+	# Resolve slot by slot (1-5)
+	await damage_calculator.resolve_turn_slot_by_slot()
 
 # Clean up after turn resolution
 func _cleanup_turn() -> void:
