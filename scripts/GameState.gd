@@ -78,35 +78,39 @@ func update_hp_display() -> void:
 
 # Apply damage to player
 func damage_player(amount: int) -> void:
-	if game_status != GameStatus.PLAYING:
-		return
-	
-	player_hp -= amount
-	player_hp = max(0, player_hp)  # Don't go below 0
-	player_hp_changed.emit(player_hp)
-	update_hp_display()
-	
-	print("[GameState] Player took ", amount, " damage. HP: ", player_hp)
-	
-	# Check for lose condition
-	if player_hp <= 0:
-		lose_game()
+	# Allow damage to be applied even if game ended (for visual consistency in slot resolution)
+	# Only apply if game is still playing
+	if game_status == GameStatus.PLAYING:
+		player_hp -= amount
+		player_hp = max(0, player_hp)  # Don't go below 0
+		player_hp_changed.emit(player_hp)
+		update_hp_display()
+		
+		print("[GameState] Player took ", amount, " damage. HP: ", player_hp)
+		
+		# Check for lose condition
+		if player_hp <= 0:
+			lose_game()
+	else:
+		print("[GameState] Player would take ", amount, " damage, but game is not playing (status: ", game_status, ")")
 
 # Apply damage to enemy
 func damage_enemy(amount: int) -> void:
-	if game_status != GameStatus.PLAYING:
-		return
-	
-	enemy_hp -= amount
-	enemy_hp = max(0, enemy_hp)  # Don't go below 0
-	enemy_hp_changed.emit(enemy_hp)
-	update_hp_display()
-	
-	print("[GameState] Enemy took ", amount, " damage. HP: ", enemy_hp)
-	
-	# Check for win condition
-	if enemy_hp <= 0:
-		win_game()
+	# Allow damage to be applied even if game ended (for visual consistency in slot resolution)
+	# Only apply if game is still playing
+	if game_status == GameStatus.PLAYING:
+		enemy_hp -= amount
+		enemy_hp = max(0, enemy_hp)  # Don't go below 0
+		enemy_hp_changed.emit(enemy_hp)
+		update_hp_display()
+		
+		print("[GameState] Enemy took ", amount, " damage. HP: ", enemy_hp)
+		
+		# Check for win condition
+		if enemy_hp <= 0:
+			win_game()
+	else:
+		print("[GameState] Enemy would take ", amount, " damage, but game is not playing (status: ", game_status, ")")
 
 # Heal player
 func heal_player(amount: int) -> void:

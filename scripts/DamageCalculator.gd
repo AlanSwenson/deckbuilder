@@ -108,6 +108,10 @@ func resolve_turn_slot_by_slot() -> void:
 	
 	print("[DamageCalculator] Resolving turn slot by slot...")
 	
+	# Store card references and data for all slots to use during resolution
+	# This prevents issues if cards are removed from slots between logging and resolution
+	var slot_cards: Dictionary = {}  # slot_index -> {player_card, player_card_data, enemy_card, enemy_card_data}
+	
 	# First, log ALL cards in ALL slots before resolving (so we see what was played)
 	# Also calculate and store damage values for cards with ranges so they match during resolution
 	if turn_history and turn_history.has_method("add_slot_cards"):
@@ -123,8 +127,14 @@ func resolve_turn_slot_by_slot() -> void:
 			
 			if player_slot:
 				player_card = _get_card_from_slot(player_slot)
+				print("[DamageCalculator] LOGGING Slot ", slot_index, ": Retrieved player_card: ", player_card.name if player_card and is_instance_valid(player_card) else "null/invalid")
 				if player_card and is_instance_valid(player_card) and "card_data" in player_card:
 					player_card_data = player_card.card_data
+					print("[DamageCalculator] LOGGING Slot ", slot_index, ": Found player_card_data: ", player_card_data.card_name if player_card_data else "null")
+				else:
+					print("[DamageCalculator] LOGGING Slot ", slot_index, ": player_card missing or has no card_data")
+			else:
+				print("[DamageCalculator] LOGGING Slot ", slot_index, ": player_slot is null")
 			
 			if enemy_slot:
 				enemy_card = _get_card_from_slot(enemy_slot)
@@ -190,29 +200,59 @@ func resolve_turn_slot_by_slot() -> void:
 			
 			# Log this slot's cards
 			turn_history.add_slot_cards(slot_index, player_description, enemy_description)
+			
+			# Store card references and slot references for resolution phase
+			slot_cards[slot_index] = {
+				"player_card": player_card,
+				"player_card_data": player_card_data,
+				"enemy_card": enemy_card,
+				"enemy_card_data": enemy_card_data,
+				"player_slot": player_slot,
+				"enemy_slot": enemy_slot
+			}
 	
 	# Now resolve each slot (1-5)
 	for slot_index in range(1, 6):  # Slots 1-5
-		# Check if game ended
+		# Check if game ended (but continue processing slots for visual consistency)
 		if game_state and game_state.has_method("is_game_playing"):
 			if not game_state.is_game_playing():
-				print("[DamageCalculator] Game ended, stopping slot resolution at slot ", slot_index)
-				return
+				print("[DamageCalculator] Game ended, but continuing slot resolution for visual consistency at slot ", slot_index)
+				# Don't return - continue processing slots even if game ended
 		
 		print("[DamageCalculator] ===== Resolving Slot ", slot_index, " =====")
 		
-		# Find player and enemy slots for this slot number
-		var player_slot = _find_slot_by_number(player_slots, slot_index)
-		var enemy_slot = _find_slot_by_number(enemy_slots, slot_index)
-		
-		# Get cards from slots
+		# Use stored card references from logging phase (more reliable than re-fetching)
 		var player_card = null
 		var player_card_data = null
-		if player_slot:
-			player_card = _get_card_from_slot(player_slot)
-			if player_card and is_instance_valid(player_card):
-				if "card_data" in player_card:
+		var enemy_card = null
+		var enemy_card_data = null
+		var player_slot = null
+		var enemy_slot = null
+		
+		if slot_index in slot_cards:
+			var stored = slot_cards[slot_index]
+			player_card = stored.get("player_card")
+			player_card_data = stored.get("player_card_data")
+			enemy_card = stored.get("enemy_card")
+			enemy_card_data = stored.get("enemy_card_data")
+			player_slot = stored.get("player_slot")
+			enemy_slot = stored.get("enemy_slot")
+			print("[DamageCalculator] Slot ", slot_index, ": Using stored card references - player_card: ", player_card.name if player_card and is_instance_valid(player_card) else "null", ", enemy_card: ", enemy_card.name if enemy_card and is_instance_valid(enemy_card) else "null")
+		else:
+			print("[DamageCalculator] Slot ", slot_index, ": WARNING - No stored card data found, trying to fetch from slots")
+			# Fallback: try to get from slots directly
+			player_slot = _find_slot_by_number(player_slots, slot_index)
+			enemy_slot = _find_slot_by_number(enemy_slots, slot_index)
+			
+			if player_slot:
+				player_card = _get_card_from_slot(player_slot)
+				if player_card and is_instance_valid(player_card) and "card_data" in player_card:
 					player_card_data = player_card.card_data
+			
+			if enemy_slot:
+				enemy_card = _get_card_from_slot(enemy_slot)
+				if enemy_card and is_instance_valid(enemy_card) and "card_data" in enemy_card:
+					enemy_card_data = enemy_card.card_data
 		
 		# Raise player card to show it's being evaluated
 		var player_card_original_position = null
@@ -226,14 +266,6 @@ func resolve_turn_slot_by_slot() -> void:
 			raise_tween.tween_property(player_card, "global_position", raised_position, 0.2)
 			await raise_tween.finished
 		
-		var enemy_card = null
-		var enemy_card_data = null
-		if enemy_slot:
-			enemy_card = _get_card_from_slot(enemy_slot)
-			if enemy_card and is_instance_valid(enemy_card):
-				if "card_data" in enemy_card:
-					enemy_card_data = enemy_card.card_data
-		
 		# Cards were already logged at the start, now resolve effects
 		# Resolve player card effects
 		# Note: damage_value was already calculated and stored during logging phase for cards with ranges
@@ -241,14 +273,19 @@ func resolve_turn_slot_by_slot() -> void:
 		var player_heal = 0
 		var player_block = 0
 		if player_card_data:
+			print("[DamageCalculator] Slot ", slot_index, ": Resolving player card - name: ", player_card_data.card_name, ", damage_value: ", player_card_data.damage_value, ", damage_range: ", player_card_data.damage_range)
 			# Use damage_value (which was set during logging if it was a range)
 			# or calculate if it wasn't set (shouldn't happen, but safety check)
 			if player_card_data.damage_value > 0:
 				player_damage = player_card_data.damage_value
+				print("[DamageCalculator] Slot ", slot_index, ": Using stored damage_value: ", player_damage)
 			elif player_card_data.damage_range.x > 0 or player_card_data.damage_range.y > 0:
 				# This shouldn't happen if logging worked correctly, but fallback just in case
 				player_damage = randi_range(player_card_data.damage_range.x, player_card_data.damage_range.y)
 				player_card_data.damage_value = player_damage
+				print("[DamageCalculator] Slot ", slot_index, ": Calculated new damage from range: ", player_damage)
+			else:
+				print("[DamageCalculator] Slot ", slot_index, ": Player card has no damage (value=0, range=", player_card_data.damage_range, ")")
 			
 			# Get healing
 			if player_card_data.heal_value > 0:
@@ -264,6 +301,8 @@ func resolve_turn_slot_by_slot() -> void:
 				print("[DamageCalculator] Slot ", slot_index, ": Player card ", player_card_data.card_name, " heals ", player_heal)
 			if player_block > 0:
 				print("[DamageCalculator] Slot ", slot_index, ": Player card ", player_card_data.card_name, " blocks ", player_block)
+		else:
+			print("[DamageCalculator] Slot ", slot_index, ": No player card data found")
 		
 		# Resolve enemy card effects
 		# Note: damage_value was already calculated and stored during logging phase for cards with ranges
@@ -327,12 +366,20 @@ func resolve_turn_slot_by_slot() -> void:
 				if enemy_block > 0 and final_player_damage < player_damage:
 					print("[DamageCalculator] Slot ", slot_index, ": Enemy block reduced damage from ", player_damage, " to ", final_player_damage)
 			
-			if final_player_damage > 0 and game_state.has_method("damage_enemy"):
-				game_state.damage_enemy(final_player_damage)
-				# Queue damage number to show
-				var offset_pos = display_position + Vector2(effect_count * 60 - 30, 0)
-				numbers_to_show.append({"position": offset_pos, "text": "-" + str(final_player_damage), "color": Color.RED})
-				effect_count += 1
+			print("[DamageCalculator] Slot ", slot_index, ": Player damage calculation - base: ", player_damage, ", enemy_block: ", enemy_block, ", final: ", final_player_damage)
+			
+			if final_player_damage > 0:
+				if game_state:
+					print("[DamageCalculator] Calling damage_enemy(", final_player_damage, ") on game_state: ", game_state.name)
+					game_state.damage_enemy(final_player_damage)
+					# Queue damage number to show
+					var offset_pos = display_position + Vector2(effect_count * 60 - 30, 0)
+					numbers_to_show.append({"position": offset_pos, "text": "-" + str(final_player_damage), "color": Color.RED})
+					effect_count += 1
+				else:
+					print("[DamageCalculator] ERROR: game_state is null, cannot apply damage")
+			else:
+				print("[DamageCalculator] Slot ", slot_index, ": Final player damage is 0, not applying")
 		
 		# Enemy damage to player
 		if enemy_damage > 0:
@@ -397,11 +444,8 @@ func resolve_turn_slot_by_slot() -> void:
 		# Add a small delay for visual feedback
 		await get_tree().create_timer(0.2).timeout
 		
-		# Check if game ended after this slot
-		if game_state and game_state.has_method("is_game_playing"):
-			if not game_state.is_game_playing():
-				print("[DamageCalculator] Game ended after slot ", slot_index, " resolution")
-				return
+		# Note: We continue processing all slots even if game ended for visual consistency
+		# The GameState.damage_enemy() and damage_player() methods will check game status internally
 
 # Helper to get slot number from slot name (e.g., "PlayerSlot3" -> 3)
 func _get_slot_number(slot: Node) -> int:
@@ -431,10 +475,20 @@ func _get_card_from_slot(slot: Node) -> Node2D:
 	if not slot:
 		return null
 	var current_card = null
+	# Try both methods to get the card
 	if "current_card" in slot:
 		current_card = slot.current_card
-	elif slot.has_method("get_current_card"):
+		if current_card:
+			print("[DamageCalculator] _get_card_from_slot: Found card via slot.current_card: ", current_card.name if is_instance_valid(current_card) else "invalid")
+	
+	if not current_card and slot.has_method("get_current_card"):
 		current_card = slot.get_current_card()
+		if current_card:
+			print("[DamageCalculator] _get_card_from_slot: Found card via get_current_card(): ", current_card.name if is_instance_valid(current_card) else "invalid")
+	
+	if not current_card:
+		print("[DamageCalculator] _get_card_from_slot: No card found in slot ", slot.name, " (has current_card property: ", "current_card" in slot, ", has get_current_card method: ", slot.has_method("get_current_card"), ")")
+	
 	return current_card
 
 # Show a rising number that fades out
