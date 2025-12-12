@@ -109,37 +109,43 @@ func resolve_turn_slot_by_slot() -> void:
 	print("[DamageCalculator] Resolving turn slot by slot...")
 	
 	# First, log ALL cards in ALL slots before resolving (so we see what was played)
+	# Also calculate and store damage values for cards with ranges so they match during resolution
 	if turn_history and turn_history.has_method("add_slot_cards"):
 		for slot_index in range(1, 6):  # Slots 1-5
 			var player_slot = _find_slot_by_number(player_slots, slot_index)
 			var enemy_slot = _find_slot_by_number(enemy_slots, slot_index)
 			
 			# Get cards from slots
+			var player_card = null
 			var player_card_data = null
+			var enemy_card = null
 			var enemy_card_data = null
 			
 			if player_slot:
-				var player_card = _get_card_from_slot(player_slot)
+				player_card = _get_card_from_slot(player_slot)
 				if player_card and is_instance_valid(player_card) and "card_data" in player_card:
 					player_card_data = player_card.card_data
 			
 			if enemy_slot:
-				var enemy_card = _get_card_from_slot(enemy_slot)
+				enemy_card = _get_card_from_slot(enemy_slot)
 				if enemy_card and is_instance_valid(enemy_card) and "card_data" in enemy_card:
 					enemy_card_data = enemy_card.card_data
 			
 			# Build effect descriptions (damage, heal, block)
+			# Calculate damage once and store it for later use during resolution
 			var player_description = ""
 			var enemy_description = ""
 			
 			if player_card_data:
 				var effects = []
-				# Calculate damage
+				# Calculate damage once and store it
 				var damage = 0
 				if player_card_data.damage_value > 0:
 					damage = player_card_data.damage_value
 				elif player_card_data.damage_range.x > 0 or player_card_data.damage_range.y > 0:
 					damage = randi_range(player_card_data.damage_range.x, player_card_data.damage_range.y)
+					# Store the calculated damage in the card_data so resolution uses the same value
+					player_card_data.damage_value = damage
 				if damage > 0:
 					effects.append(str(damage) + " DMG")
 				
@@ -158,12 +164,14 @@ func resolve_turn_slot_by_slot() -> void:
 			
 			if enemy_card_data:
 				var effects = []
-				# Calculate damage
+				# Calculate damage once and store it
 				var damage = 0
 				if enemy_card_data.damage_value > 0:
 					damage = enemy_card_data.damage_value
 				elif enemy_card_data.damage_range.x > 0 or enemy_card_data.damage_range.y > 0:
 					damage = randi_range(enemy_card_data.damage_range.x, enemy_card_data.damage_range.y)
+					# Store the calculated damage in the card_data so resolution uses the same value
+					enemy_card_data.damage_value = damage
 				if damage > 0:
 					effects.append(str(damage) + " DMG")
 				
@@ -228,15 +236,19 @@ func resolve_turn_slot_by_slot() -> void:
 		
 		# Cards were already logged at the start, now resolve effects
 		# Resolve player card effects
+		# Note: damage_value was already calculated and stored during logging phase for cards with ranges
 		var player_damage = 0
 		var player_heal = 0
 		var player_block = 0
 		if player_card_data:
-			# Calculate damage
+			# Use damage_value (which was set during logging if it was a range)
+			# or calculate if it wasn't set (shouldn't happen, but safety check)
 			if player_card_data.damage_value > 0:
 				player_damage = player_card_data.damage_value
 			elif player_card_data.damage_range.x > 0 or player_card_data.damage_range.y > 0:
+				# This shouldn't happen if logging worked correctly, but fallback just in case
 				player_damage = randi_range(player_card_data.damage_range.x, player_card_data.damage_range.y)
+				player_card_data.damage_value = player_damage
 			
 			# Get healing
 			if player_card_data.heal_value > 0:
@@ -254,15 +266,19 @@ func resolve_turn_slot_by_slot() -> void:
 				print("[DamageCalculator] Slot ", slot_index, ": Player card ", player_card_data.card_name, " blocks ", player_block)
 		
 		# Resolve enemy card effects
+		# Note: damage_value was already calculated and stored during logging phase for cards with ranges
 		var enemy_damage = 0
 		var enemy_heal = 0
 		var enemy_block = 0
 		if enemy_card_data:
-			# Calculate damage
+			# Use damage_value (which was set during logging if it was a range)
+			# or calculate if it wasn't set (shouldn't happen, but safety check)
 			if enemy_card_data.damage_value > 0:
 				enemy_damage = enemy_card_data.damage_value
 			elif enemy_card_data.damage_range.x > 0 or enemy_card_data.damage_range.y > 0:
+				# This shouldn't happen if logging worked correctly, but fallback just in case
 				enemy_damage = randi_range(enemy_card_data.damage_range.x, enemy_card_data.damage_range.y)
+				enemy_card_data.damage_value = enemy_damage
 			
 			# Get healing
 			if enemy_card_data.heal_value > 0:
