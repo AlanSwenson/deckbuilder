@@ -32,8 +32,31 @@ func update_card_display() -> void:
 	else:
 		print("[Card] ERROR: CardNameLabel not found for card ", name)
 	
+	# Update element symbol label
+	var element_symbol_label = get_node_or_null("ElementSymbolLabel")
+	if element_symbol_label:
+		var symbol = _get_element_symbol(card_data.element)
+		element_symbol_label.text = symbol
+		# Set color based on element
+		element_symbol_label.modulate = card_data.get_element_color()
+	
 	# Update card number label to show card name for now (can change later)
 	var number_label = get_node_or_null("CardNumberLabel")
 	if number_label:
 		# Keep the number label for testing/identification if needed
 		pass
+
+# Get the symbol for each element type
+func _get_element_symbol(element_type: CardData.ElementType) -> String:
+	match element_type:
+		CardData.ElementType.SULFUR:
+			return "🔥"  # Fire
+		CardData.ElementType.MERCURY:
+			return "💧"  # Water/Liquid
+		CardData.ElementType.SALT:
+			return "⛰️"  # Earth/Mountain
+		CardData.ElementType.VITAE:
+			return "🌿"  # Life/Plant
+		CardData.ElementType.AETHER:
+			return "⭐"  # Spirit/Star
+	return "?"
