@@ -8,7 +8,7 @@ func _ready():
 	# Start with a header
 	add_line("=== Turn History ===", Color.WHITE)
 
-func add_line(text: String, color: Color = Color.WHITE):
+func add_line(text: String, _color: Color = Color.WHITE):
 	history_lines.append(text)
 	_update_display()
 
@@ -25,6 +25,19 @@ func add_heal_event(slot: int, card_name: String, heal: int, target: String):
 func add_block_event(slot: int, card_name: String, block: int):
 	var text = "Slot %d: %s → %d Block" % [slot, card_name, block]
 	add_line(text, Color.CYAN)
+
+func add_slot_cards(slot: int, player_card_name: String, enemy_card_name: String):
+	# Log what cards are in this slot - each on separate line
+	var player_text = player_card_name if player_card_name else "Empty"
+	var enemy_text = enemy_card_name if enemy_card_name else "Empty"
+	
+	# Player card on first line
+	var player_line = "Slot %d: Player : %s" % [slot, player_text]
+	add_line(player_line, Color.WHITE)
+	
+	# Enemy card on second line
+	var enemy_line = "Slot %d: Enemy : %s" % [slot, enemy_text]
+	add_line(enemy_line, Color.WHITE)
 
 func clear_history():
 	history_lines.clear()
@@ -44,6 +57,11 @@ func _update_display():
 			rich_text += "[color=#66ff66]" + line + "[/color]\n"
 		elif "Block" in line or "block" in line.to_lower():
 			rich_text += "[color=#66ccff]" + line + "[/color]\n"
+		elif "Empty" in line or "empty" in line.to_lower():
+			rich_text += "[color=#888888]" + line + "[/color]\n"
+		elif "Player:" in line and "Enemy:" in line:
+			# Slot cards line - highlight player/enemy names
+			rich_text += "[color=#ffffff]" + line + "[/color]\n"
 		elif "===" in line:
 			rich_text += "[color=#ffffff]" + line + "[/color]\n"
 		else:
