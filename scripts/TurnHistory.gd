@@ -59,8 +59,8 @@ func _update_display():
 			rich_text += "[color=#66ccff]" + line + "[/color]\n"
 		elif "Empty" in line or "empty" in line.to_lower():
 			rich_text += "[color=#888888]" + line + "[/color]\n"
-		elif "Player:" in line and "Enemy:" in line:
-			# Slot cards line - highlight player/enemy names
+		elif "Player : " in line or "Enemy : " in line:
+			# Slot cards line - highlight player/enemy names (with spaces around colon)
 			rich_text += "[color=#ffffff]" + line + "[/color]\n"
 		elif "===" in line:
 			rich_text += "[color=#ffffff]" + line + "[/color]\n"
