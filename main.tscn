@@ -1,7 +1,7 @@
-[gd_scene load_steps=13 format=3 uid="uid://chixb0wso8nu8"]
+[gd_scene load_steps=15 format=3 uid="uid://chixb0wso8nu8"]
 
 [ext_resource type="Script" uid="uid://dd36et36c40tt" path="res://scripts/CardManager.gd" id="1_0xm2m"]
-[ext_resource type="PackedScene" uid="uid://dxhb33qqyqu6e" path="res://scenes/DiscardSlotEnemy.tscn" id="1_4c57u"]
+[ext_resource type="PackedScene" path="res://scenes/DiscardSlotEnemy.tscn" id="1_4c57u"]
 [ext_resource type="PackedScene" uid="uid://b8k3jhsqrbd3k" path="res://scenes/DeckSlotEnemy.tscn" id="1_efxa6"]
 [ext_resource type="Script" uid="uid://dxis0rv5o2s1m" path="res://scripts/PlayerHand.gd" id="4_1bvp3"]
 [ext_resource type="Script" uid="uid://b8k3jhsqrbd3e" path="res://scripts/EnemyHand.gd" id="4_enemyhand"]
@@ -12,7 +12,8 @@
 [ext_resource type="Script" uid="uid://xn1puuxp05qt" path="res://scripts/EnemyDeck.gd" id="8_enemydeck"]
 [ext_resource type="PackedScene" uid="uid://dxhb33qqyqu6b" path="res://scenes/DiscardSlotPlayer.tscn" id="9_kek77"]
 [ext_resource type="Script" uid="uid://l8ok37c4rqtd" path="res://scripts/TurnLogic.gd" id="9_turnlogic"]
-[ext_resource type="Script" path="res://scripts/GameState.gd" id="10_gamestate"]
+[ext_resource type="Script" uid="uid://bahauubof6s36" path="res://scripts/GameState.gd" id="10_gamestate"]
+[ext_resource type="PackedScene" uid="uid://bn1mu44ggwypr" path="res://scenes/turn_history.tscn" id="14_w48qg"]
 
 [node name="Main" type="Node2D"]
 
@@ -72,3 +73,10 @@ offset_top = 880.0
 offset_right = 1575.0
 offset_bottom = 920.0
 text = "Play Hand"
+
+[node name="TurnHistory" parent="." instance=ExtResource("14_w48qg")]
+offset_left = 1331.0
+offset_top = 3.0
+offset_right = 1594.0
+offset_bottom = 859.0
+grow_vertical = 0

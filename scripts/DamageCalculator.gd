@@ -3,9 +3,11 @@ class_name DamageCalculator
 
 # References (set by TurnLogic)
 var game_state: Node2D = null
+var turn_history: Control = null
 
-func setup(game_state_ref: Node2D) -> void:
+func setup(game_state_ref: Node2D, turn_history_ref: Control = null) -> void:
 	game_state = game_state_ref
+	turn_history = turn_history_ref
 
 # Calculate total damage from player cards
 func calculate_player_damage() -> int:
@@ -157,6 +159,9 @@ func resolve_turn_slot_by_slot() -> void:
 				print("[DamageCalculator] Slot ", slot_index, ": Player card ", player_card_data.card_name, " heals ", player_heal)
 			if player_block > 0:
 				print("[DamageCalculator] Slot ", slot_index, ": Player card ", player_card_data.card_name, " blocks ", player_block)
+				# Log to turn history
+				if turn_history and turn_history.has_method("add_block_event"):
+					turn_history.add_block_event(slot_index, player_card_data.card_name, player_block)
 		
 		# Resolve enemy card effects
 		var enemy_damage = 0
@@ -183,6 +188,9 @@ func resolve_turn_slot_by_slot() -> void:
 				print("[DamageCalculator] Slot ", slot_index, ": Enemy card ", enemy_card_data.card_name, " heals ", enemy_heal)
 			if enemy_block > 0:
 				print("[DamageCalculator] Slot ", slot_index, ": Enemy card ", enemy_card_data.card_name, " blocks ", enemy_block)
+				# Log to turn history
+				if turn_history and turn_history.has_method("add_block_event"):
+					turn_history.add_block_event(slot_index, enemy_card_data.card_name, enemy_block)
 		
 		# Calculate midpoint between player and enemy cards for displaying results
 		var display_position = Vector2(0, 0)
@@ -210,9 +218,11 @@ func resolve_turn_slot_by_slot() -> void:
 		# Player damage to enemy
 		if player_damage > 0:
 			var final_player_damage = player_damage
+			var blocked_amount = 0
 			# Check if enemy card ignores block
 			if not enemy_card_data or not enemy_card_data.ignores_block:
 				final_player_damage = max(0, player_damage - enemy_block)
+				blocked_amount = player_damage - final_player_damage
 				if enemy_block > 0 and final_player_damage < player_damage:
 					print("[DamageCalculator] Slot ", slot_index, ": Enemy block reduced damage from ", player_damage, " to ", final_player_damage)
 			
@@ -222,13 +232,20 @@ func resolve_turn_slot_by_slot() -> void:
 				var offset_pos = display_position + Vector2(effect_count * 60 - 30, 0)
 				numbers_to_show.append({"position": offset_pos, "text": "-" + str(final_player_damage), "color": Color.RED})
 				effect_count += 1
+				
+				# Log to turn history
+				if turn_history and turn_history.has_method("add_damage_event"):
+					var card_name = player_card_data.card_name if player_card_data else "Unknown"
+					turn_history.add_damage_event(slot_index, card_name, final_player_damage, "Enemy", blocked_amount)
 		
 		# Enemy damage to player
 		if enemy_damage > 0:
 			var final_enemy_damage = enemy_damage
+			var blocked_amount = 0
 			# Check if player card ignores block
 			if not player_card_data or not player_card_data.ignores_block:
 				final_enemy_damage = max(0, enemy_damage - player_block)
+				blocked_amount = enemy_damage - final_enemy_damage
 				if player_block > 0 and final_enemy_damage < enemy_damage:
 					print("[DamageCalculator] Slot ", slot_index, ": Player block reduced damage from ", enemy_damage, " to ", final_enemy_damage)
 			
@@ -238,6 +255,11 @@ func resolve_turn_slot_by_slot() -> void:
 				var offset_pos = display_position + Vector2(effect_count * 60 - 30, 0)
 				numbers_to_show.append({"position": offset_pos, "text": "-" + str(final_enemy_damage), "color": Color.RED})
 				effect_count += 1
+				
+				# Log to turn history
+				if turn_history and turn_history.has_method("add_damage_event"):
+					var card_name = enemy_card_data.card_name if enemy_card_data else "Unknown"
+					turn_history.add_damage_event(slot_index, card_name, final_enemy_damage, "Player", blocked_amount)
 		
 		# Apply healing
 		if player_heal > 0 and game_state.has_method("heal_player"):
@@ -246,6 +268,11 @@ func resolve_turn_slot_by_slot() -> void:
 			var offset_pos = display_position + Vector2(effect_count * 60 - 30, 0)
 			numbers_to_show.append({"position": offset_pos, "text": "+" + str(player_heal), "color": Color.GREEN})
 			effect_count += 1
+			
+			# Log to turn history
+			if turn_history and turn_history.has_method("add_heal_event"):
+				var card_name = player_card_data.card_name if player_card_data else "Unknown"
+				turn_history.add_heal_event(slot_index, card_name, player_heal, "Player")
 		
 		if enemy_heal > 0 and game_state.has_method("heal_enemy"):
 			game_state.heal_enemy(enemy_heal)
@@ -253,6 +280,11 @@ func resolve_turn_slot_by_slot() -> void:
 			var offset_pos = display_position + Vector2(effect_count * 60 - 30, 0)
 			numbers_to_show.append({"position": offset_pos, "text": "+" + str(enemy_heal), "color": Color.GREEN})
 			effect_count += 1
+			
+			# Log to turn history
+			if turn_history and turn_history.has_method("add_heal_event"):
+				var card_name = enemy_card_data.card_name if enemy_card_data else "Unknown"
+				turn_history.add_heal_event(slot_index, card_name, enemy_heal, "Enemy")
 		
 		# Show all numbers at once (non-blocking)
 		for number_data in numbers_to_show:
