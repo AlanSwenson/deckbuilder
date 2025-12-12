@@ -1,10 +1,10 @@
-[gd_scene load_steps=12 format=3 uid="uid://chixb0wso8nu8"]
+[gd_scene load_steps=13 format=3 uid="uid://chixb0wso8nu8"]
 
 [ext_resource type="Script" uid="uid://dd36et36c40tt" path="res://scripts/CardManager.gd" id="1_0xm2m"]
-[ext_resource type="PackedScene" path="res://scenes/DiscardSlotEnemy.tscn" id="1_4c57u"]
+[ext_resource type="PackedScene" uid="uid://dxhb33qqyqu6e" path="res://scenes/DiscardSlotEnemy.tscn" id="1_4c57u"]
 [ext_resource type="PackedScene" uid="uid://b8k3jhsqrbd3k" path="res://scenes/DeckSlotEnemy.tscn" id="1_efxa6"]
 [ext_resource type="Script" uid="uid://dxis0rv5o2s1m" path="res://scripts/PlayerHand.gd" id="4_1bvp3"]
-[ext_resource type="Script" path="res://scripts/EnemyHand.gd" id="4_enemyhand"]
+[ext_resource type="Script" uid="uid://b8k3jhsqrbd3e" path="res://scripts/EnemyHand.gd" id="4_enemyhand"]
 [ext_resource type="PackedScene" uid="uid://bc30jhsqrbd3k" path="res://scenes/DeckSlotPlayer.tscn" id="5_5vw27"]
 [ext_resource type="Script" uid="uid://dbyi7va0e1pvi" path="res://scripts/InputManager.gd" id="6_272bh"]
 [ext_resource type="PackedScene" uid="uid://beobyodqvdcrg" path="res://scenes/DeckView.tscn" id="7_272bh"]
@@ -15,35 +15,40 @@
 
 [node name="Main" type="Node2D"]
 
-[node name="DeckSlotEnemy" parent="." instance=ExtResource("1_efxa6")]
-position = Vector2(1511, 113)
-
-[node name="DiscardSlotEnemy" parent="." instance=ExtResource("1_4c57u")]
-position = Vector2(1513, 335)
+[node name="InputManager" type="Node2D" parent="."]
+script = ExtResource("6_272bh")
 
 [node name="CardManager" type="Node2D" parent="."]
 script = ExtResource("1_0xm2m")
 
+[node name="TurnLogic" type="Node2D" parent="."]
+script = ExtResource("9_turnlogic")
+
 [node name="PlayerHand" type="Node2D" parent="."]
 script = ExtResource("4_1bvp3")
-
-[node name="EnemyHand" type="Node2D" parent="."]
-script = ExtResource("4_enemyhand")
 
 [node name="PlayerDeck" type="Node2D" parent="."]
 script = ExtResource("7_playerdeck")
 
-[node name="EnemyDeck" type="Node2D" parent="."]
-script = ExtResource("8_enemydeck")
-
 [node name="DeckSlotPlayer" parent="." instance=ExtResource("5_5vw27")]
 position = Vector2(84, 888)
 
-[node name="InputManager" type="Node2D" parent="."]
-script = ExtResource("6_272bh")
+[node name="DiscardSlotPlayer" parent="." instance=ExtResource("9_kek77")]
+position = Vector2(84, 668)
+script = null
 
-[node name="TurnLogic" type="Node2D" parent="."]
-script = ExtResource("9_turnlogic")
+[node name="EnemyDeck" type="Node2D" parent="."]
+script = ExtResource("8_enemydeck")
+
+[node name="EnemyHand" type="Node2D" parent="."]
+script = ExtResource("4_enemyhand")
+
+[node name="DeckSlotEnemy" parent="." instance=ExtResource("1_efxa6")]
+position = Vector2(1514, 113)
+
+[node name="DiscardSlotEnemy" parent="." instance=ExtResource("1_4c57u")]
+position = Vector2(1513, 335)
+script = null
 
 [node name="DeckView" parent="." instance=ExtResource("7_272bh")]
 visible = false
@@ -63,6 +68,3 @@ offset_top = 880.0
 offset_right = 1575.0
 offset_bottom = 920.0
 text = "Play Hand"
-
-[node name="DiscardSlotPlayer" parent="." instance=ExtResource("9_kek77")]
-position = Vector2(84, 668)

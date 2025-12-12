@@ -10,6 +10,7 @@ size = Vector2(148, 209)
 script = ExtResource("1_up88e")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
+centered = true
 texture = ExtResource("2_nj2yh")
 
 [node name="Area2D" type="Area2D" parent="."]
