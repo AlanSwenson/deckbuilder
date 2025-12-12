@@ -119,8 +119,13 @@ func check_and_snap_to_slot(card: Node2D) -> bool:
 	print("[CardManager] check_and_snap_to_slot() called for ", card.name if card else "null")
 	
 	# Don't snap cards that are being added to hand (they have a special flag)
-	if card.has_meta("adding_to_hand"):
+	if card and is_instance_valid(card) and card.has_meta("adding_to_hand"):
 		print("[CardManager] BLOCKED - card has adding_to_hand flag: ", card.name)
+		return false
+	
+	# Don't snap cards that are being evaluated (they're animating)
+	if card and is_instance_valid(card) and card.has_meta("evaluating_slot"):
+		print("[CardManager] BLOCKED - card is being evaluated: ", card.name)
 		return false
 	
 	# Find all CardSlot nodes in the scene
