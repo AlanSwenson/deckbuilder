@@ -6,6 +6,7 @@ var card_manager: Node2D = null
 var enemy_deck: Node2D = null
 var player_deck: Node2D = null
 var player_hand: Node2D = null
+var enemy_hand: Node2D = null
 var card_scene: PackedScene = null
 
 func _ready() -> void:
@@ -17,6 +18,7 @@ func _ready() -> void:
 	enemy_deck = get_parent().get_node_or_null("EnemyDeck")
 	player_deck = get_parent().get_node_or_null("PlayerDeck")
 	player_hand = get_parent().get_node_or_null("PlayerHand")
+	enemy_hand = get_parent().get_node_or_null("EnemyHand")
 	
 	if not card_manager:
 		print("[TurnLogic] ERROR: CardManager not found")
@@ -26,6 +28,8 @@ func _ready() -> void:
 		print("[TurnLogic] ERROR: PlayerDeck not found")
 	if not player_hand:
 		print("[TurnLogic] ERROR: PlayerHand not found")
+	if not enemy_hand:
+		print("[TurnLogic] ERROR: EnemyHand not found")
 	
 	# Connect to Play Hand button
 	var play_hand_button = get_parent().get_node_or_null("PlayHandButton")
@@ -53,7 +57,7 @@ func evaluate_turn() -> void:
 	cleanup_turn()
 
 func play_ai_cards() -> void:
-	if not enemy_deck or not card_manager:
+	if not enemy_hand or not card_manager:
 		print("[TurnLogic] ERROR: Cannot play AI cards - missing references")
 		return
 	
@@ -81,64 +85,65 @@ func play_ai_cards() -> void:
 		if not current_card:
 			empty_slots.append(slot)
 	
-	var cards_to_play = min(empty_slots.size(), randi_range(1, 5))  # Play 1-5 random cards
-	print("[TurnLogic] Playing ", cards_to_play, " AI cards")
+	# Get cards from enemy hand
+	var available_cards = []
+	if "enemy_hand" in enemy_hand:
+		available_cards = enemy_hand.enemy_hand.duplicate()  # Make a copy to avoid modifying while iterating
 	
-	# Draw random cards from enemy deck and place them
+	if available_cards.is_empty():
+		print("[TurnLogic] Enemy hand is empty, cannot play cards")
+		return
+	
+	# Determine how many cards to play (random, up to number of empty slots and available cards)
+	var cards_to_play = min(empty_slots.size(), available_cards.size(), randi_range(1, 5))  # Play 1-5 random cards
+	print("[TurnLogic] Playing ", cards_to_play, " AI cards from hand (", available_cards.size(), " available)")
+	
+	# Select random cards from hand and place them
 	for i in range(cards_to_play):
-		if empty_slots.is_empty():
+		if empty_slots.is_empty() or available_cards.is_empty():
 			break
 		
-		# Draw a card from enemy deck
-		var card_data = null
-		if enemy_deck.has_method("draw_card"):
-			card_data = enemy_deck.draw_card()
+		# Pick a random card from available cards
+		var random_card_index = randi() % available_cards.size()
+		var card_to_play = available_cards[random_card_index]
+		available_cards.remove_at(random_card_index)
 		
-		if not card_data:
-			print("[TurnLogic] WARNING: Could not draw card from enemy deck")
+		if not card_to_play or not is_instance_valid(card_to_play):
+			print("[TurnLogic] WARNING: Invalid card selected")
 			continue
+		
+		# Get card data for logging
+		var card_data = null
+		if "card_data" in card_to_play:
+			card_data = card_to_play.card_data
 		
 		# Pick a random empty slot
-		var random_index = randi() % empty_slots.size()
-		var target_slot = empty_slots[random_index]
-		empty_slots.remove_at(random_index)
+		var random_slot_index = randi() % empty_slots.size()
+		var target_slot = empty_slots[random_slot_index]
+		empty_slots.remove_at(random_slot_index)
 		
-		# Create card instance
-		var new_card = card_scene.instantiate()
-		if not new_card:
-			print("[TurnLogic] ERROR: Failed to instantiate card scene")
-			continue
-		
-		# Give card a unique name
-		var card_number = 1000 + i  # Use high numbers to distinguish from player cards
-		new_card.name = "EnemyCard" + str(card_number)
-		
-		# Set card data
-		if new_card.has_method("set_card_data"):
-			new_card.set_card_data(card_data)
+		# Remove card from enemy hand
+		if enemy_hand.has_method("remove_card_from_hand"):
+			enemy_hand.remove_card_from_hand(card_to_play)
 		
 		# Disable input for enemy cards (they're AI controlled)
-		var area2d = new_card.get_node_or_null("Area2D")
+		var area2d = card_to_play.get_node_or_null("Area2D")
 		if area2d:
 			area2d.input_pickable = false
 		
-		# Add card to CardManager
-		card_manager.add_child(new_card)
-		
-		# Wait a frame to ensure card is in tree
-		await get_tree().process_frame
-		
 		# Place card in the enemy slot
 		if target_slot.has_method("snap_card"):
-			target_slot.snap_card(new_card)
-			print("[TurnLogic] Placed AI card ", card_data.card_name, " in ", target_slot.name)
+			target_slot.snap_card(card_to_play)
+			var card_name = card_data.card_name if card_data else card_to_play.name
+			print("[TurnLogic] Placed AI card ", card_name, " in ", target_slot.name)
 		else:
 			# Fallback: manually position the card
-			new_card.global_position = target_slot.global_position
-			print("[TurnLogic] Positioned AI card ", card_data.card_name, " at ", target_slot.name)
+			card_to_play.global_position = target_slot.global_position
+			var card_name = card_data.card_name if card_data else card_to_play.name
+			print("[TurnLogic] Positioned AI card ", card_name, " at ", target_slot.name)
 		
 		# Play the card flip animation to reveal the card
-		var animation_player = new_card.get_node_or_null("AnimationPlayer")
+		var animation_player = card_to_play.get_node_or_null("AnimationPlayer")
 		if animation_player:
 			if animation_player.has_animation("card_flip"):
 				animation_player.play("card_flip")
@@ -172,6 +177,9 @@ func cleanup_turn() -> void:
 	
 	# Refill player hand to original amount
 	refill_player_hand()
+	
+	# Refill enemy hand to original amount
+	refill_enemy_hand()
 
 # Move all cards from player slots to discard slot
 func discard_player_slot_cards() -> void:
@@ -217,13 +225,21 @@ func discard_player_slot_cards() -> void:
 			current_card.queue_free()
 			await get_tree().process_frame
 
-# Clear enemy slots (remove enemy cards)
+# Clear enemy slots (remove enemy cards and discard them)
 func clear_enemy_slots() -> void:
+	if not enemy_deck:
+		print("[TurnLogic] ERROR: Cannot discard cards - EnemyDeck not found")
+		return
+	
 	var main_node = get_parent() if get_parent() else get_tree().current_scene
 	var enemy_slots = []
 	_find_enemy_slots(main_node, enemy_slots)
 	
-	print("[TurnLogic] Clearing ", enemy_slots.size(), " enemy slots")
+	var discard_slot = main_node.get_node_or_null("DiscardSlotEnemy")
+	if not discard_slot:
+		print("[TurnLogic] WARNING: DiscardSlotEnemy not found, cards will be removed but not visually placed")
+	
+	print("[TurnLogic] Discarding cards from ", enemy_slots.size(), " enemy slots")
 	
 	for slot in enemy_slots:
 		var current_card = null
@@ -233,9 +249,21 @@ func clear_enemy_slots() -> void:
 			current_card = slot.get_current_card()
 		
 		if current_card and is_instance_valid(current_card):
+			# Get card data and add to discard pile
+			if "card_data" in current_card and current_card.card_data:
+				enemy_deck.discard_card(current_card.card_data)
+				print("[TurnLogic] Discarded enemy card: ", current_card.card_data.card_name)
+			
 			# Remove card from slot
 			if slot.has_method("remove_card"):
 				slot.remove_card(current_card)
+			
+			# Move card to discard slot position if it exists
+			if discard_slot:
+				# Animate card to discard position
+				var tween = get_tree().create_tween()
+				tween.tween_property(current_card, "global_position", discard_slot.global_position, 0.3)
+				await tween.finished
 			
 			# Remove the card node
 			current_card.queue_free()
@@ -350,6 +378,121 @@ func refill_player_hand() -> void:
 		# Update hand positions to ensure proper spacing
 		if player_hand.has_method("update_hand_positions"):
 			player_hand.update_hand_positions()
+		
+		# Small delay between cards
+		if i < cards_needed - 1:
+			await get_tree().create_timer(0.05).timeout
+
+# Refill enemy hand to original amount (10 cards)
+func refill_enemy_hand() -> void:
+	if not enemy_hand or not enemy_deck:
+		print("[TurnLogic] ERROR: Cannot refill enemy hand - missing references")
+		return
+	
+	# Get current hand size
+	var current_hand_size = 0
+	if "enemy_hand" in enemy_hand:
+		current_hand_size = enemy_hand.enemy_hand.size()
+	
+	var target_hand_size = 10  # HAND_COUNT
+	var cards_needed = target_hand_size - current_hand_size
+	
+	if cards_needed <= 0:
+		print("[TurnLogic] Enemy hand is already full (", current_hand_size, " cards)")
+		return
+	
+	print("[TurnLogic] Drawing ", cards_needed, " cards to refill enemy hand")
+	
+	# Draw cards and add them to hand
+	for i in range(cards_needed):
+		var card_data = enemy_deck.draw_card()
+		if not card_data:
+			print("[TurnLogic] WARNING: Could not draw card ", i + 1, " - deck may be empty")
+			break
+		
+		# Create card instance
+		var new_card = card_scene.instantiate()
+		if not new_card:
+			print("[TurnLogic] ERROR: Failed to instantiate card scene")
+			continue
+		
+		# Get card number from EnemyHand
+		var card_number = 1
+		if "card_id_counter" in enemy_hand:
+			card_number = enemy_hand.card_id_counter
+			enemy_hand.card_id_counter += 1
+		
+		new_card.name = "EnemyCard" + str(card_number)
+		
+		# Set card number
+		if new_card.has_method("set_card_number"):
+			new_card.set_card_number(card_number)
+		new_card.set_meta("card_number", card_number)
+		new_card.set_meta("is_enemy_card", true)  # Mark as enemy card
+		
+		# Set card data
+		if new_card.has_method("set_card_data"):
+			new_card.set_card_data(card_data)
+		
+		# Position card at deck location
+		var deck_slot = get_parent().get_node_or_null("DeckSlotEnemy")
+		if deck_slot:
+			var deck_local_position = card_manager.to_local(deck_slot.global_position)
+			new_card.position = deck_local_position
+		
+		# Add card to CardManager
+		card_manager.add_child(new_card)
+		
+		# Wait a frame to ensure card is in tree
+		await get_tree().process_frame
+		
+		# Verify card is at deck position
+		if deck_slot:
+			var deck_local_position = card_manager.to_local(deck_slot.global_position)
+			new_card.position = deck_local_position
+		
+		# Set card data
+		if new_card.has_method("set_card_data"):
+			new_card.set_card_data(card_data)
+			if new_card.has_method("update_card_display"):
+				new_card.update_card_display()
+		
+		# Calculate target position in hand
+		var current_hand_size_after_add = current_hand_size + i
+		var target_x = 0.0
+		if enemy_hand.has_method("calculate_card_position"):
+			target_x = enemy_hand.calculate_card_position(current_hand_size_after_add)
+		else:
+			# Fallback calculation using constants
+			var card_width = 100  # CARD_WIDTH constant
+			var center_x = enemy_hand.center_screen_x if "center_screen_x" in enemy_hand else get_viewport().size.x / 2
+			var total_width = (current_hand_size_after_add) * card_width
+			target_x = center_x + current_hand_size_after_add * card_width - total_width / 2
+		
+		var hand_y = 110  # HAND_Y_POSITION constant for enemy
+		var target_position = Vector2(target_x, hand_y)
+		
+		# Play flip animation and animate to hand position
+		var animation_player = new_card.get_node_or_null("AnimationPlayer")
+		if animation_player and animation_player.has_animation("card_flip"):
+			animation_player.play("card_flip")
+		
+		# Animate to hand position
+		var tween = get_tree().create_tween()
+		tween.set_ease(Tween.EASE_OUT)
+		tween.set_trans(Tween.TRANS_CUBIC)
+		tween.tween_property(new_card, "position", target_position, 0.2)
+		
+		# Add to hand array
+		if "enemy_hand" in enemy_hand:
+			enemy_hand.enemy_hand.append(new_card)
+		
+		# Wait for animation to complete
+		await tween.finished
+		
+		# Update hand positions to ensure proper spacing
+		if enemy_hand.has_method("update_hand_positions"):
+			enemy_hand.update_hand_positions()
 		
 		# Small delay between cards
 		if i < cards_needed - 1:
