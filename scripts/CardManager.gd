@@ -7,8 +7,8 @@ var input_manager: Node2D = null
 const CARD_SLOT_COUNT: int = 5
 const CARD_SLOT_SCENE_PATH: String = "res://scenes/CardSlot.tscn"
 const CARD_SLOT_START_X: float = 400.0  # Starting X position for first slot
-const PLAYER_SLOT_Y: float = 550.0  # Y position for player slots (closer to player hand)
-const ENEMY_SLOT_Y: float = 250.0  # Y position for enemy slots (at top)
+const PLAYER_SLOT_Y: float = 600.0  # Y position for player slots (closer to player hand)
+const ENEMY_SLOT_Y: float = 350.0  # Y position for enemy slots (at top)
 const CARD_SLOT_SPACING: float = 170.0  # Horizontal spacing between slots
 
 @onready var deck_view = $"../DeckView"
@@ -28,10 +28,10 @@ func _ready() -> void:
 	# Connect to child_added signal to handle dynamically added cards
 	child_entered_tree.connect(_on_child_added)
 
-	# Find all card nodes (they all start with "Card")
+	# Find all card nodes (they all start with "Card" or "EnemyCard")
 	var card_nodes = []
 	for child in get_children():
-		if child.name.begins_with("Card"):
+		if child.name.begins_with("Card") or child.name.begins_with("EnemyCard"):
 			card_nodes.append(child)
 
 	print("[CardManager] _ready() - Found ", card_nodes.size(), " card(s)")
@@ -125,14 +125,31 @@ func check_and_snap_to_slot(card: Node2D) -> bool:
 	var card_slots = []
 	_find_card_slots(main_node, card_slots)
 	
-	# Check if this is a player card (in player hand or came from player hand)
+	# Check if this is a player card or enemy card
 	var is_player_card = false
+	var is_enemy_card = false
 	var player_hand = main_node.get_node_or_null("PlayerHand")
+	var enemy_hand = main_node.get_node_or_null("EnemyHand")
+	
+	# Check if card is in player hand
 	if player_hand and player_hand.has_method("is_card_in_hand"):
 		is_player_card = player_hand.is_card_in_hand(card)
-	# Also check if card came from a player slot
-	if not is_player_card and original_slot:
-		is_player_card = original_slot.name.begins_with("PlayerSlot")
+	
+	# Check if card is in enemy hand
+	if not is_player_card and enemy_hand and enemy_hand.has_method("is_card_in_hand"):
+		is_enemy_card = enemy_hand.is_card_in_hand(card)
+	
+	# Check if card has enemy meta flag
+	if not is_player_card and not is_enemy_card:
+		if card.has_meta("is_enemy_card"):
+			is_enemy_card = card.get_meta("is_enemy_card")
+	
+	# Also check if card came from a slot
+	if not is_player_card and not is_enemy_card and original_slot:
+		if original_slot.name.begins_with("PlayerSlot"):
+			is_player_card = true
+		elif original_slot.name.begins_with("EnemySlot"):
+			is_enemy_card = true
 	
 	# Find all slots that overlap with the card
 	var overlapping_slots = []
@@ -140,9 +157,10 @@ func check_and_snap_to_slot(card: Node2D) -> bool:
 		if slot.has_method("is_card_overlapping"):
 			if slot.is_card_overlapping(card):
 				# Player cards can only go to player slots, enemy cards to enemy slots
-				# For now, we only have player cards, so filter out enemy slots
 				if is_player_card and slot.name.begins_with("EnemySlot"):
 					continue  # Skip enemy slots for player cards
+				if is_enemy_card and slot.name.begins_with("PlayerSlot"):
+					continue  # Skip player slots for enemy cards
 				overlapping_slots.append(slot)
 	
 	# If no overlapping slots, clear the card's slot reference if it had one
@@ -176,9 +194,12 @@ func check_and_snap_to_slot(card: Node2D) -> bool:
 	
 	# Snap to the target slot (this will handle swapping automatically)
 	if target_slot and target_slot.has_method("snap_card"):
-		# Safety check: prevent player cards from going to enemy slots
+		# Safety check: prevent player cards from going to enemy slots and vice versa
 		if is_player_card and target_slot.name.begins_with("EnemySlot"):
 			print("[CardManager] Player cards cannot be placed in enemy slots!")
+			return false
+		if is_enemy_card and target_slot.name.begins_with("PlayerSlot"):
+			print("[CardManager] Enemy cards cannot be placed in player slots!")
 			return false
 		
 		# If card was in a different slot, remove it from that slot first
@@ -192,9 +213,12 @@ func check_and_snap_to_slot(card: Node2D) -> bool:
 		# Ensure the card that was just snapped is properly set in the slot
 		# and NOT in hand
 		if card:
-			if player_hand and player_hand.has_method("remove_card_from_hand"):
-				# Remove from hand if it was there (will be no-op if not in hand)
+			if is_player_card and player_hand and player_hand.has_method("remove_card_from_hand"):
+				# Remove from player hand if it was there (will be no-op if not in hand)
 				player_hand.remove_card_from_hand(card)
+			elif is_enemy_card and enemy_hand and enemy_hand.has_method("remove_card_from_hand"):
+				# Remove from enemy hand if it was there (will be no-op if not in hand)
+				enemy_hand.remove_card_from_hand(card)
 		
 		# Handle the swapped card
 		if swapped_card and swapped_card != card:
@@ -210,7 +234,7 @@ func check_and_snap_to_slot(card: Node2D) -> bool:
 				# Card was from hand - send swapped card back to hand
 				# The swapped card's slot reference was already cleared by snap_card
 				# Just add it to hand
-				if player_hand and player_hand.has_method("add_card_to_hand_at_index"):
+				if is_player_card and player_hand and player_hand.has_method("add_card_to_hand_at_index"):
 					# Make sure it's not already in hand
 					if not player_hand.has_method("is_card_in_hand") or not player_hand.is_card_in_hand(swapped_card):
 						# Use mouse position to calculate hand index for better placement
@@ -219,6 +243,16 @@ func check_and_snap_to_slot(card: Node2D) -> bool:
 						if player_hand.has_method("calculate_index_from_x"):
 							target_index = player_hand.calculate_index_from_x(mouse_pos.x)
 						player_hand.add_card_to_hand_at_index(swapped_card, target_index)
+					# Update starting position will be set when hand positions update
+				elif is_enemy_card and enemy_hand and enemy_hand.has_method("add_card_to_hand_at_index"):
+					# Make sure it's not already in hand
+					if not enemy_hand.has_method("is_card_in_hand") or not enemy_hand.is_card_in_hand(swapped_card):
+						# Use mouse position to calculate hand index for better placement
+						var mouse_pos = get_global_mouse_position()
+						var target_index = 0
+						if enemy_hand.has_method("calculate_index_from_x"):
+							target_index = enemy_hand.calculate_index_from_x(mouse_pos.x)
+						enemy_hand.add_card_to_hand_at_index(swapped_card, target_index)
 					# Update starting position will be set when hand positions update
 		
 		# Update starting position for the card that was snapped
