@@ -338,6 +338,22 @@ func _create_player_slots() -> void:
 		
 		# Add slot to main scene (as sibling of CardManager)
 		main_node.add_child(slot)
+		
+		# Add number label to the slot
+		var label = Label.new()
+		label.name = "SlotNumberLabel"
+		label.text = str(i + 1)
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		label.add_theme_font_size_override("font_size", 24)
+		label.add_theme_color_override("font_color", Color.WHITE)
+		label.add_theme_color_override("font_outline_color", Color.BLACK)
+		label.add_theme_constant_override("outline_size", 2)
+		# Position label at top center of slot (assuming slot is about 148x209)
+		label.position = Vector2(-20, 0)  # Offset to center and above slot
+		label.size = Vector2(40, 30)
+		slot.add_child(label)
+		
 		print(
 			"[CardManager] Created player slot: ",
 			slot.name,
@@ -400,6 +416,22 @@ func _create_enemy_slots() -> void:
 		
 		# Add slot to main scene (as sibling of CardManager)
 		main_node.add_child(slot)
+		
+		# Add number label to the slot
+		var label = Label.new()
+		label.name = "SlotNumberLabel"
+		label.text = str(i + 1)
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		label.add_theme_font_size_override("font_size", 24)
+		label.add_theme_color_override("font_color", Color.WHITE)
+		label.add_theme_color_override("font_outline_color", Color.BLACK)
+		label.add_theme_constant_override("outline_size", 2)
+		# Position label at bottom center of slot (for enemy slots at top)
+		label.position = Vector2(-20, 0)  # Offset to center and below slot
+		label.size = Vector2(40, 30)
+		slot.add_child(label)
+		
 		print(
 			"[CardManager] Created enemy slot: ",
 			slot.name,
