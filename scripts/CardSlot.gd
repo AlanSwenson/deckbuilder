@@ -14,16 +14,22 @@ func _on_area_entered(area: Area2D) -> void:
 	# Check if the area belongs to a card (player or enemy)
 	var card = area.get_parent()
 	if card and (card.name.begins_with("Card") or card.name.begins_with("EnemyCard")):
+		# Don't track cards that are being added to hand
+		if card.has_meta("adding_to_hand"):
+			return
 		if area not in overlapping_cards:
 			overlapping_cards.append(area)
-			print("[CardSlot] Card entered slot: ", card.name)
+			# Logging removed per user request
 
 func _on_area_exited(area: Area2D) -> void:
 	var card = area.get_parent()
 	if card and (card.name.begins_with("Card") or card.name.begins_with("EnemyCard")):
+		# Don't track cards that are being added to hand
+		if card.has_meta("adding_to_hand"):
+			return
 		if area in overlapping_cards:
 			overlapping_cards.erase(area)
-			print("[CardSlot] Card exited slot: ", card.name)
+			# Logging removed per user request
 
 # Check if a specific card is overlapping this slot
 func is_card_overlapping(card: Node2D) -> bool:
@@ -40,7 +46,20 @@ func get_distance_to_point(global_point: Vector2) -> float:
 # Returns the card that was previously in this slot (if any), or null if slot was empty
 func snap_card(card: Node2D) -> Node2D:
 	if not card:
+		print("[CardSlot] snap_card() called with null card")
 		return null
+	
+	print("[CardSlot] snap_card() called for ", card.name, " to slot ", name)
+	
+	# Don't snap cards that are being added to hand (they're animating to hand position)
+	if card.has_meta("adding_to_hand"):
+		print("[CardSlot] BLOCKED snap - card is being added to hand: ", card.name, " | Has flag: ", card.has_meta("adding_to_hand"))
+		return null
+	
+	# Check monitoring status
+	var card_area = card.get_node_or_null("Area2D")
+	if card_area:
+		print("[CardSlot] Card ", card.name, " monitoring status: ", card_area.monitoring)
 	
 	var previously_occupied_card = current_card
 	

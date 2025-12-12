@@ -79,6 +79,9 @@ func _process(_delta: float) -> void:
 				dragged_card.name)
 			_handle_card_release(dragged_card)
 			is_dragging = false
+			# Remove the dragging flag
+			if dragged_card.has_meta("is_being_dragged"):
+				dragged_card.remove_meta("is_being_dragged")
 			dragged_card = null
 
 # Handle input events from the Area2D
@@ -86,8 +89,8 @@ func _process(_delta: float) -> void:
 func _on_card_input_event(
 	card: Node2D, _viewport: Node, event: InputEvent, _shape_idx: int
 ) -> void:
-	print("[InputManager] _on_card_input_event() - Event from ", card.name,
-		" | Event type: ", event.get_class())
+	# print("[InputManager] _on_card_input_event() - Event from ", card.name,
+	# 	" | Event type: ", event.get_class())
 	
 	if event is InputEventMouseButton:
 		var mouse_event = event as InputEventMouseButton
@@ -107,6 +110,9 @@ func _on_card_input_event(
 					_handle_card_release(card)
 					is_dragging = false
 					dragged_card = null
+					# Remove the dragging flag
+					if card.has_meta("is_being_dragged"):
+						card.remove_meta("is_being_dragged")
 					print("[InputManager] _on_card_input_event() - DRAGGING STOPPED for ",
 						card.name)
 
@@ -114,6 +120,8 @@ func _on_card_input_event(
 func _start_dragging(card: Node2D) -> void:
 	is_dragging = true
 	dragged_card = card
+	# Mark card as being dragged so it can be snapped even if in hand
+	card.set_meta("is_being_dragged", true)
 	# Store the starting position before dragging
 	if card.has_meta("starting_position"):
 		dragged_card_start_position = card.get_meta("starting_position")
@@ -178,6 +186,7 @@ func _on_card_mouse_entered(card: Node2D) -> void:
 	hovered_card = card
 	_apply_hover_effect(card)
 	_set_cursor_hand(true)
+	# Logging removed per user request
 
 # Handle mouse exiting a card area (hover end)
 func _on_card_mouse_exited(card: Node2D) -> void:
@@ -187,6 +196,7 @@ func _on_card_mouse_exited(card: Node2D) -> void:
 	
 	if hovered_card == card:
 		_reset_hover_effect()
+	# Logging removed per user request
 
 # Apply hover effect to a card (scale up)
 func _apply_hover_effect(card: Node2D) -> void:

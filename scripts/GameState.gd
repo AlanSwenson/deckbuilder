@@ -1,0 +1,158 @@
+extends Node2D
+class_name GameState
+
+# HP tracking
+var player_hp: int = 100
+var enemy_hp: int = 100
+
+# Game state
+enum GameStatus {
+	PLAYING,
+	PLAYER_WON,
+	PLAYER_LOST
+}
+
+var game_status: GameStatus = GameStatus.PLAYING
+
+# Signals
+signal player_hp_changed(new_hp: int)
+signal enemy_hp_changed(new_hp: int)
+signal game_won()
+signal game_lost()
+
+# UI references
+var player_hp_label: Label = null
+var enemy_hp_label: Label = null
+var game_over_label: Label = null
+
+func _ready() -> void:
+	# Create UI labels for HP display
+	_create_hp_ui()
+	update_hp_display()
+
+func _create_hp_ui() -> void:
+	# Player HP label (bottom left)
+	player_hp_label = Label.new()
+	player_hp_label.name = "PlayerHPLabel"
+	add_child(player_hp_label)
+	player_hp_label.position = Vector2(20, 20)
+	player_hp_label.add_theme_font_size_override("font_size", 32)
+	player_hp_label.add_theme_color_override("font_color", Color.WHITE)
+	player_hp_label.add_theme_color_override("font_outline_color", Color.BLACK)
+	player_hp_label.add_theme_constant_override("outline_size", 4)
+	
+	# Enemy HP label (top right)
+	enemy_hp_label = Label.new()
+	enemy_hp_label.name = "EnemyHPLabel"
+	add_child(enemy_hp_label)
+	enemy_hp_label.position = Vector2(20, 80)
+	enemy_hp_label.add_theme_font_size_override("font_size", 32)
+	enemy_hp_label.add_theme_color_override("font_color", Color.WHITE)
+	enemy_hp_label.add_theme_color_override("font_outline_color", Color.BLACK)
+	enemy_hp_label.add_theme_constant_override("outline_size", 4)
+	
+	# Game over label (centered, initially hidden)
+	game_over_label = Label.new()
+	game_over_label.name = "GameOverLabel"
+	add_child(game_over_label)
+	game_over_label.position = Vector2(600, 400)
+	game_over_label.size = Vector2(400, 200)
+	game_over_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	game_over_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	game_over_label.add_theme_font_size_override("font_size", 48)
+	game_over_label.add_theme_color_override("font_color", Color.YELLOW)
+	game_over_label.add_theme_color_override("font_outline_color", Color.BLACK)
+	game_over_label.add_theme_constant_override("outline_size", 6)
+	game_over_label.visible = false
+
+func update_hp_display() -> void:
+	if player_hp_label:
+		player_hp_label.text = "Player HP: " + str(player_hp)
+	if enemy_hp_label:
+		enemy_hp_label.text = "Enemy HP: " + str(enemy_hp)
+
+# Apply damage to player
+func damage_player(amount: int) -> void:
+	if game_status != GameStatus.PLAYING:
+		return
+	
+	player_hp -= amount
+	player_hp = max(0, player_hp)  # Don't go below 0
+	player_hp_changed.emit(player_hp)
+	update_hp_display()
+	
+	print("[GameState] Player took ", amount, " damage. HP: ", player_hp)
+	
+	# Check for lose condition
+	if player_hp <= 0:
+		lose_game()
+
+# Apply damage to enemy
+func damage_enemy(amount: int) -> void:
+	if game_status != GameStatus.PLAYING:
+		return
+	
+	enemy_hp -= amount
+	enemy_hp = max(0, enemy_hp)  # Don't go below 0
+	enemy_hp_changed.emit(enemy_hp)
+	update_hp_display()
+	
+	print("[GameState] Enemy took ", amount, " damage. HP: ", enemy_hp)
+	
+	# Check for win condition
+	if enemy_hp <= 0:
+		win_game()
+
+# Heal player
+func heal_player(amount: int) -> void:
+	if game_status != GameStatus.PLAYING:
+		return
+	
+	player_hp += amount
+	player_hp_changed.emit(player_hp)
+	update_hp_display()
+	
+	print("[GameState] Player healed ", amount, ". HP: ", player_hp)
+
+# Heal enemy
+func heal_enemy(amount: int) -> void:
+	if game_status != GameStatus.PLAYING:
+		return
+	
+	enemy_hp += amount
+	enemy_hp_changed.emit(enemy_hp)
+	update_hp_display()
+	
+	print("[GameState] Enemy healed ", amount, ". HP: ", enemy_hp)
+
+# Win condition triggered
+func win_game() -> void:
+	if game_status != GameStatus.PLAYING:
+		return
+	
+	game_status = GameStatus.PLAYER_WON
+	game_won.emit()
+	show_game_over("VICTORY!", Color.GREEN)
+	print("[GameState] Player won!")
+
+# Lose condition triggered
+func lose_game() -> void:
+	if game_status != GameStatus.PLAYING:
+		return
+	
+	game_status = GameStatus.PLAYER_LOST
+	game_lost.emit()
+	show_game_over("DEFEAT!", Color.RED)
+	print("[GameState] Player lost!")
+
+# Show game over message
+func show_game_over(message: String, color: Color) -> void:
+	if game_over_label:
+		game_over_label.text = message
+		game_over_label.add_theme_color_override("font_color", color)
+		game_over_label.visible = true
+
+# Check if game is still playing
+func is_game_playing() -> bool:
+	return game_status == GameStatus.PLAYING
+

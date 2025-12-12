@@ -116,8 +116,12 @@ func check_and_snap_to_slot(card: Node2D) -> bool:
 	if not card:
 		return false
 	
-	# Find the slot this card originally came from (if any)
-	var original_slot = find_card_slot(card)
+	print("[CardManager] check_and_snap_to_slot() called for ", card.name if card else "null")
+	
+	# Don't snap cards that are being added to hand (they have a special flag)
+	if card.has_meta("adding_to_hand"):
+		print("[CardManager] BLOCKED - card has adding_to_hand flag: ", card.name)
+		return false
 	
 	# Find all CardSlot nodes in the scene
 	# (they should be siblings of CardManager or in parent)
@@ -134,10 +138,22 @@ func check_and_snap_to_slot(card: Node2D) -> bool:
 	# Check if card is in player hand
 	if player_hand and player_hand.has_method("is_card_in_hand"):
 		is_player_card = player_hand.is_card_in_hand(card)
+		# If card is in hand, only allow snapping if it's being explicitly dragged
+		# (check for is_being_dragged meta flag)
+		if is_player_card and not card.has_meta("is_being_dragged"):
+			return false
 	
 	# Check if card is in enemy hand
 	if not is_player_card and enemy_hand and enemy_hand.has_method("is_card_in_hand"):
 		is_enemy_card = enemy_hand.is_card_in_hand(card)
+		# If card is in enemy hand, don't auto-snap (only snap when explicitly played by AI)
+		# Enemy cards should never be dragged by player, so always block if in enemy hand
+		if is_enemy_card:
+			print("[CardManager] BLOCKED - card is in enemy hand: ", card.name)
+			return false
+	
+	# Find the slot this card originally came from (if any)
+	var original_slot = find_card_slot(card)
 	
 	# Check if card has enemy meta flag
 	if not is_player_card and not is_enemy_card:
