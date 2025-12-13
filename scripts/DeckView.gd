@@ -25,6 +25,8 @@ func _ready():
 func open():
 	show()
 	display_deck_cards()
+	# Reset any hover effects on cards in the main scene
+	_reset_main_scene_hovers()
 
 func close():
 	hide()
@@ -32,6 +34,12 @@ func close():
 
 func _on_close_pressed():
 	close()
+
+# Reset hover effects on cards in the main scene when opening deck view
+func _reset_main_scene_hovers():
+	var input_manager = get_tree().current_scene.get_node_or_null("InputManager")
+	if input_manager and input_manager.has_method("_reset_hover_effect"):
+		input_manager._reset_hover_effect()
 
 # Optional: Press ESC to close
 func _input(event):

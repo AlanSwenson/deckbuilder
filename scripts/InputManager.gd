@@ -21,12 +21,18 @@ const CARD_HEIGHT: float = 209.0  # Card height in pixels
 
 # References
 var card_manager: Node2D = null
+var deck_view: CanvasLayer = null
 
 func _ready() -> void:
 	# Find CardManager
 	card_manager = get_node_or_null("../CardManager")
 	if not card_manager:
 		card_manager = get_tree().current_scene.get_node_or_null("CardManager")
+	
+	# Find DeckView
+	deck_view = get_node_or_null("../DeckView")
+	if not deck_view:
+		deck_view = get_tree().current_scene.get_node_or_null("DeckView")
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(_delta: float) -> void:
@@ -179,6 +185,10 @@ func _on_card_mouse_entered(card: Node2D) -> void:
 	if is_dragging:
 		return
 	
+	# Don't apply hover effect if DeckView is open
+	if _is_deck_view_open():
+		return
+	
 	# Reset previous hovered card if different
 	if hovered_card and hovered_card != card:
 		_reset_card_scale(hovered_card)
@@ -192,6 +202,10 @@ func _on_card_mouse_entered(card: Node2D) -> void:
 func _on_card_mouse_exited(card: Node2D) -> void:
 	# Don't reset hover if we're dragging this card
 	if is_dragging and dragged_card == card:
+		return
+	
+	# Don't reset hover if DeckView is open (hover shouldn't have been applied anyway)
+	if _is_deck_view_open():
 		return
 	
 	if hovered_card == card:
@@ -328,6 +342,12 @@ func _restore_card_z_index(card: Node2D) -> void:
 		card.remove_meta("original_z_index")
 		# Update z_index based on current position in hand
 		_update_card_z_index_from_hand_position(card)
+
+# Check if DeckView is currently open
+func _is_deck_view_open() -> bool:
+	if deck_view and is_instance_valid(deck_view):
+		return deck_view.visible
+	return false
 
 # Return a card to its starting position with animation
 func _return_card_to_start_position(card: Node2D) -> void:
