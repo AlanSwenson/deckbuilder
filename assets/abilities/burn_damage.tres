@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="AbilityType" load_steps=2 format=3 uid="uid://c4burn_damage"]
+
+[ext_resource type="Script" path="res://scripts/ability_type.gd" id="1_ability"]
+
+[resource]
+script = ExtResource("1_ability")
+id = "burn_damage"
+display_name = "Burn Damage"
+description_template = "Deal {value} burn damage"
+category = 0
+is_boolean = false
+value_ranges = [Vector2i(2, 4), Vector2i(3, 6), Vector2i(5, 8), Vector2i(7, 10), Vector2i(9, 13)]

@@ -10,21 +10,14 @@ enum ElementType {
 	AETHER     # Spirit/Energy
 }
 
-# Card rarity (for future progression)
+# Card rarity - determines number of active ability slots and value ranges
+# Common: 1 slot, Uncommon: 2 slots, Rare: 3 slots, Epic: 4 slots, Legendary: 5 slots
 enum Rarity {
-	COMMON,
-	RARE,
-	EPIC,
-	LEGENDARY
-}
-
-# Effect types that cards can have
-enum EffectType {
-	DAMAGE,
-	HEAL,
-	BLOCK,
-	DRAW,
-	SPECIAL
+	COMMON,     # 1 ability slot
+	UNCOMMON,   # 2 ability slots
+	RARE,       # 3 ability slots
+	EPIC,       # 4 ability slots
+	LEGENDARY   # 5 ability slots
 }
 
 # Basic card properties
@@ -33,41 +26,98 @@ enum EffectType {
 @export var element: ElementType = ElementType.SULFUR
 @export var rarity: Rarity = Rarity.COMMON
 
-# Effect data - cards can have multiple effects
-@export var effects: Array[CardEffect] = []
-
-# Diablo-style random roll ranges (min-max for drops)
-@export var damage_range: Vector2i = Vector2i(0, 0)  # e.g., Vector2i(3, 7) = 3-7 damage
-@export var heal_range: Vector2i = Vector2i(0, 0)
-@export var block_range: Vector2i = Vector2i(0, 0)
-@export var draw_amount: int = 0
-
-# Actual rolled values (set when card is created/dropped)
-var damage_value: int = 0
-var heal_value: int = 0
-var block_value: int = 0
-
-# Combo bonuses
-@export var combo_damage_bonus: int = 0
-@export var combo_heal_bonus: int = 0
-@export var combo_block_bonus: int = 0
-
-# Special conditions
-@export var bonus_if_facing_empty: bool = false
-@export var bonus_if_adjacent_empty: bool = false
-@export var ignores_block: bool = false
+# Ability slots - each card can have up to 5 abilities
+# Only slots up to get_slot_count() are active based on rarity
+@export var ability_slots: Array[AbilitySlot] = []
 
 # Visual
 @export var card_art: Texture2D  # Sprite for the card
 
-# Initialize with random rolls
+# Get the number of active ability slots based on rarity
+func get_slot_count() -> int:
+	return rarity + 1  # COMMON=0 -> 1 slot, LEGENDARY=4 -> 5 slots
+
+# Roll stats for all active ability slots based on rarity
 func roll_stats() -> void:
-	if damage_range.x > 0 or damage_range.y > 0:
-		damage_value = randi_range(damage_range.x, damage_range.y)
-	if heal_range.x > 0 or heal_range.y > 0:
-		heal_value = randi_range(heal_range.x, heal_range.y)
-	if block_range.x > 0 or block_range.y > 0:
-		block_value = randi_range(block_range.x, block_range.y)
+	var active_slots = get_slot_count()
+	for i in range(mini(active_slots, ability_slots.size())):
+		ability_slots[i].roll_value(rarity)
+
+# Add an ability to this card by id (convenience method)
+func add_ability(ability_id: String) -> void:
+	var ability_type = AbilityRegistry.get_ability(ability_id)
+	if ability_type:
+		var slot = AbilitySlot.new()
+		slot.ability_type = ability_type
+		ability_slots.append(slot)
+	else:
+		push_warning("CardData.add_ability: Unknown ability id: %s" % ability_id)
+
+# Get the rolled value for a specific ability by id
+func get_ability_value(ability_id: String) -> int:
+	var active_slots = get_slot_count()
+	for i in range(mini(active_slots, ability_slots.size())):
+		var slot = ability_slots[i]
+		if slot.ability_type and slot.ability_type.id == ability_id:
+			return slot.rolled_value
+	return 0
+
+# Check if this card has a specific ability (and it's active based on rarity)
+func has_ability(ability_id: String) -> bool:
+	var active_slots = get_slot_count()
+	for i in range(mini(active_slots, ability_slots.size())):
+		var slot = ability_slots[i]
+		if slot.ability_type and slot.ability_type.id == ability_id:
+			return true
+	return false
+
+# Get total damage from all active DAMAGE category abilities
+func get_total_damage() -> int:
+	var total = 0
+	var active_slots = get_slot_count()
+	for i in range(mini(active_slots, ability_slots.size())):
+		var slot = ability_slots[i]
+		if slot.ability_type and slot.ability_type.category == AbilityType.EffectCategory.DAMAGE:
+			total += slot.rolled_value
+	return total
+
+# Get total heal from all active HEAL category abilities
+func get_total_heal() -> int:
+	var total = 0
+	var active_slots = get_slot_count()
+	for i in range(mini(active_slots, ability_slots.size())):
+		var slot = ability_slots[i]
+		if slot.ability_type and slot.ability_type.category == AbilityType.EffectCategory.HEAL:
+			total += slot.rolled_value
+	return total
+
+# Get total block from all active BLOCK category abilities
+func get_total_block() -> int:
+	var total = 0
+	var active_slots = get_slot_count()
+	for i in range(mini(active_slots, ability_slots.size())):
+		var slot = ability_slots[i]
+		if slot.ability_type and slot.ability_type.category == AbilityType.EffectCategory.BLOCK:
+			total += slot.rolled_value
+	return total
+
+# Get total draw from all active DRAW category abilities
+func get_total_draw() -> int:
+	var total = 0
+	var active_slots = get_slot_count()
+	for i in range(mini(active_slots, ability_slots.size())):
+		var slot = ability_slots[i]
+		if slot.ability_type and slot.ability_type.category == AbilityType.EffectCategory.DRAW:
+			total += slot.rolled_value
+	return total
+
+# Check if this card ignores block
+func ignores_block() -> bool:
+	return has_ability("ignores_block")
+
+# Get combo damage bonus
+func get_combo_damage() -> int:
+	return get_ability_value("combo_damage")
 
 # Get element color for UI
 func get_element_color() -> Color:
@@ -99,8 +149,88 @@ func get_element_name() -> String:
 			return "Aether"
 	return "Unknown"
 
+# Get rarity name as string
+func get_rarity_name() -> String:
+	match rarity:
+		Rarity.COMMON:
+			return "Common"
+		Rarity.UNCOMMON:
+			return "Uncommon"
+		Rarity.RARE:
+			return "Rare"
+		Rarity.EPIC:
+			return "Epic"
+		Rarity.LEGENDARY:
+			return "Legendary"
+	return "Unknown"
+
+# Get rarity color for UI
+func get_rarity_color() -> Color:
+	match rarity:
+		Rarity.COMMON:
+			return Color.GRAY
+		Rarity.UNCOMMON:
+			return Color.GREEN
+		Rarity.RARE:
+			return Color.DODGER_BLUE
+		Rarity.EPIC:
+			return Color.DARK_VIOLET
+		Rarity.LEGENDARY:
+			return Color.ORANGE
+	return Color.WHITE
+
+# Generate description from active ability slots
+func generate_description() -> String:
+	var parts: Array[String] = []
+	var active_slots = get_slot_count()
+	for i in range(mini(active_slots, ability_slots.size())):
+		var slot = ability_slots[i]
+		if slot.ability_type:
+			parts.append(slot.get_description())
+	return ". ".join(parts)
+
 # Create a copy of this card with new random rolls
 func create_instance() -> CardData:
-	var instance = self.duplicate(true)
+	var instance = CardData.new()
+	instance.card_name = card_name
+	instance.description = description
+	instance.element = element
+	instance.rarity = rarity
+	instance.card_art = card_art
+	
+	# Deep copy ability slots
+	for slot in ability_slots:
+		var new_slot = slot.duplicate_slot()
+		instance.ability_slots.append(new_slot)
+	
+	# Roll new values
 	instance.roll_stats()
 	return instance
+
+# Serialize for save/load
+func to_save_dict() -> Dictionary:
+	var slots_data: Array = []
+	for slot in ability_slots:
+		slots_data.append(slot.to_dict())
+	
+	return {
+		"card_name": card_name,
+		"element": element,
+		"rarity": rarity,
+		"slots": slots_data
+	}
+
+# Deserialize from saved data (static factory method)
+static func from_save_dict(data: Dictionary) -> CardData:
+	var card = CardData.new()
+	card.card_name = data.get("card_name", "")
+	card.element = data.get("element", ElementType.SULFUR)
+	card.rarity = data.get("rarity", Rarity.COMMON)
+	
+	var slots_data = data.get("slots", [])
+	for slot_data in slots_data:
+		var slot = AbilitySlot.new()
+		slot.from_dict(slot_data, AbilityRegistry)
+		card.ability_slots.append(slot)
+	
+	return card

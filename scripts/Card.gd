@@ -40,75 +40,78 @@ func update_card_display() -> void:
 		# Set color based on element
 		element_symbol_label.modulate = card_data.get_element_color()
 	
-	# Update description label
+	# Update description label - use generated description from abilities
 	var description_label = get_node_or_null("DescriptionLabel")
 	if description_label:
-		description_label.text = card_data.description if card_data.description else ""
+		# Use the stored description or generate from abilities
+		var desc = card_data.description if card_data.description != "" else card_data.generate_description()
+		description_label.text = desc
 	
-	# Update damage label (show if damage_value > 0 or has damage_range)
+	# Update damage label using new ability system
 	var damage_label = get_node_or_null("DamageLabel")
 	if damage_label:
-		var damage_text = ""
-		if card_data.damage_value > 0:
-			damage_text = str(card_data.damage_value)
-		elif card_data.damage_range.x > 0 or card_data.damage_range.y > 0:
-			damage_text = str(card_data.damage_range.x) + "-" + str(card_data.damage_range.y)
-		damage_label.text = damage_text
-		damage_label.visible = damage_text != ""
+		var damage = card_data.get_total_damage()
+		if damage > 0:
+			damage_label.text = str(damage)
+			damage_label.visible = true
+		else:
+			damage_label.visible = false
 	
-	# Update heal label (show if heal_value > 0 or has heal_range)
+	# Update heal label using new ability system
 	var heal_label = get_node_or_null("HealLabel")
 	if heal_label:
-		var heal_text = ""
-		if card_data.heal_value > 0:
-			heal_text = "+" + str(card_data.heal_value)
-		elif card_data.heal_range.x > 0 or card_data.heal_range.y > 0:
-			heal_text = "+" + str(card_data.heal_range.x) + "-" + str(card_data.heal_range.y)
-		heal_label.text = heal_text
-		heal_label.visible = heal_text != ""
+		var heal = card_data.get_total_heal()
+		if heal > 0:
+			heal_label.text = "+" + str(heal)
+			heal_label.visible = true
+		else:
+			heal_label.visible = false
 	
-	# Update block label (show if block_value > 0 or has block_range)
+	# Update block label using new ability system
 	var block_label = get_node_or_null("BlockLabel")
 	if block_label:
-		var block_text = ""
-		if card_data.block_value > 0:
-			block_text = str(card_data.block_value)
-		elif card_data.block_range.x > 0 or card_data.block_range.y > 0:
-			block_text = str(card_data.block_range.x) + "-" + str(card_data.block_range.y)
-		block_label.text = block_text
-		block_label.visible = block_text != ""
+		var block = card_data.get_total_block()
+		if block > 0:
+			block_label.text = str(block)
+			block_label.visible = true
+		else:
+			block_label.visible = false
 	
-	# Update draw label (show if draw_amount > 0)
+	# Update draw label using new ability system
 	var draw_label = get_node_or_null("DrawLabel")
 	if draw_label:
-		if card_data.draw_amount > 0:
-			draw_label.text = "Draw: " + str(card_data.draw_amount)
+		var draw = card_data.get_total_draw()
+		if draw > 0:
+			draw_label.text = "Draw: " + str(draw)
 			draw_label.visible = true
 		else:
 			draw_label.visible = false
 	
-	# Update special conditions label
+	# Update special conditions label using new ability system
 	var special_label = get_node_or_null("SpecialLabel")
 	if special_label:
 		var special_texts = []
-		if card_data.ignores_block:
+		
+		# Check for ignores_block ability
+		if card_data.ignores_block():
 			special_texts.append("Ignores Block")
-		if card_data.bonus_if_facing_empty:
-			special_texts.append("Empty Bonus")
-		if card_data.bonus_if_adjacent_empty:
-			special_texts.append("Adjacent Bonus")
-		if card_data.combo_damage_bonus > 0:
-			special_texts.append("Combo +" + str(card_data.combo_damage_bonus) + " DMG")
-		if card_data.combo_heal_bonus > 0:
-			special_texts.append("Combo +" + str(card_data.combo_heal_bonus) + " Heal")
-		if card_data.combo_block_bonus > 0:
-			special_texts.append("Combo +" + str(card_data.combo_block_bonus) + " Block")
+		
+		# Check for combo damage ability
+		var combo_dmg = card_data.get_combo_damage()
+		if combo_dmg > 0:
+			special_texts.append("Combo +" + str(combo_dmg) + " DMG")
 		
 		if special_texts.size() > 0:
 			special_label.text = "\n".join(special_texts)
 			special_label.visible = true
 		else:
 			special_label.visible = false
+	
+	# Update rarity indicator (if you have one)
+	var rarity_label = get_node_or_null("RarityLabel")
+	if rarity_label:
+		rarity_label.text = card_data.get_rarity_name()
+		rarity_label.modulate = card_data.get_rarity_color()
 	
 	# Update card number label to show card name for now (can change later)
 	var number_label = get_node_or_null("CardNumberLabel")
