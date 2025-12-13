@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="AbilityType" load_steps=2 format=3 uid="uid://c4heal_ability"]
+
+[ext_resource type="Script" path="res://scripts/ability_type.gd" id="1_ability"]
+
+[resource]
+script = ExtResource("1_ability")
+id = "heal"
+display_name = "Heal"
+description_template = "Restore {value} HP"
+category = 1
+is_boolean = false
+value_ranges = [Vector2i(3, 5), Vector2i(5, 8), Vector2i(7, 11), Vector2i(10, 14), Vector2i(13, 18)]

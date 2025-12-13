@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="AbilityType" load_steps=2 format=3 uid="uid://c4ignores_block"]
+
+[ext_resource type="Script" path="res://scripts/ability_type.gd" id="1_ability"]
+
+[resource]
+script = ExtResource("1_ability")
+id = "ignores_block"
+display_name = "Piercing"
+description_template = "Ignores block"
+category = 4
+is_boolean = true
+value_ranges = [Vector2i(1, 1), Vector2i(1, 1), Vector2i(1, 1), Vector2i(1, 1), Vector2i(1, 1)]

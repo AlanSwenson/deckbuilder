@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="AbilityType" load_steps=2 format=3 uid="uid://c4draw_ability"]
+
+[ext_resource type="Script" path="res://scripts/ability_type.gd" id="1_ability"]
+
+[resource]
+script = ExtResource("1_ability")
+id = "draw"
+display_name = "Draw"
+description_template = "Draw {value} card(s)"
+category = 3
+is_boolean = false
+value_ranges = [Vector2i(1, 1), Vector2i(1, 2), Vector2i(2, 2), Vector2i(2, 3), Vector2i(3, 3)]

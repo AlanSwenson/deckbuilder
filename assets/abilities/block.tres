@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="AbilityType" load_steps=2 format=3 uid="uid://c4block_ability"]
+
+[ext_resource type="Script" path="res://scripts/ability_type.gd" id="1_ability"]
+
+[resource]
+script = ExtResource("1_ability")
+id = "block"
+display_name = "Block"
+description_template = "Gain {value} block"
+category = 2
+is_boolean = false
+value_ranges = [Vector2i(4, 6), Vector2i(6, 9), Vector2i(8, 12), Vector2i(11, 16), Vector2i(15, 20)]
