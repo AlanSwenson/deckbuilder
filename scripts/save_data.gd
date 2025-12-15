@@ -26,14 +26,36 @@ func _init():
 
 # Check if this save slot has data
 func is_empty() -> bool:
-	return total_runs == 0
+	# A save is empty if it has no runs AND no deck
+	# This allows new saves with decks to be considered "not empty"
+	return total_runs == 0 and current_deck.is_empty()
 
 # Get display text for save slot button
 func get_display_text() -> String:
 	if is_empty():
 		return "EMPTY SLOT"
 	else:
-		return "Slot %d - %d Runs - Act %d\n%d Cards Collected" % [slot_number, total_runs, current_act, cards_collected]
+		# Use player name if it's been set, otherwise use a default name
+		var display_name = player_name
+		if display_name == "New Game" or display_name == "":
+			display_name = "Save Slot %d" % slot_number
+		
+		# Format play time
+		var hours = int(play_time_seconds / 3600)
+		var minutes = int((play_time_seconds - hours * 3600) / 60)
+		var time_str = ""
+		if hours > 0:
+			time_str = "%dh %dm" % [hours, minutes]
+		elif minutes > 0:
+			time_str = "%dm" % minutes
+		else:
+			time_str = "<1m"
+		
+		# Show deck size (what player is actively using)
+		var deck_size = current_deck.size()
+		
+		# Format: Name on first line, stats on second line, time on third
+		return "%s\n%d Runs • Act %d • %d Cards\nPlay Time: %s" % [display_name, total_runs, current_act, deck_size, time_str]
 
 # Add a card to the collection
 func add_card_to_collection(card: CardData) -> void:

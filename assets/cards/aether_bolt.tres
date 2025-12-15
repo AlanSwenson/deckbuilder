@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=12 format=3 uid="uid://cj2sehi24ni8k"]
+
+[ext_resource type="Script" uid="uid://cftaoej854jqn" path="res://scripts/card_data.gd" id="1_card"]
+[ext_resource type="Script" uid="uid://c01fxuq8gcclf" path="res://scripts/ability_slot.gd" id="2_slot"]
+[ext_resource type="Resource" path="res://assets/abilities/fire_damage.tres" id="3_fire"]
+[ext_resource type="Resource" path="res://assets/abilities/ignores_block.tres" id="4_pierce"]
+[ext_resource type="Resource" path="res://assets/abilities/combo_damage.tres" id="5_combo"]
+[ext_resource type="Resource" path="res://assets/abilities/draw.tres" id="6_draw"]
+
+[sub_resource type="Resource" id="slot1"]
+script = ExtResource("2_slot")
+ability_type = ExtResource("3_fire")
+
+[sub_resource type="Resource" id="slot2"]
+script = ExtResource("2_slot")
+ability_type = ExtResource("4_pierce")
+
+[sub_resource type="Resource" id="slot3"]
+script = ExtResource("2_slot")
+ability_type = ExtResource("5_combo")
+
+[sub_resource type="Resource" id="slot4"]
+script = ExtResource("2_slot")
+ability_type = ExtResource("3_fire")
+
+[sub_resource type="Resource" id="slot5"]
+script = ExtResource("2_slot")
+ability_type = ExtResource("6_draw")
+
+[resource]
+script = ExtResource("1_card")
+card_name = "Aether Bolt"
+element = 4
+ability_slots = Array[ExtResource("2_slot")]([SubResource("slot1"), SubResource("slot2"), SubResource("slot3"), SubResource("slot4"), SubResource("slot5")])

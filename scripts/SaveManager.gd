@@ -15,13 +15,20 @@ func _ready():
 # Load save data from slot number
 func load_save(slot: int) -> SaveData:
 	var file_path = SAVE_DIR + (SAVE_FILE_TEMPLATE % slot)
+	print("[SaveManager] Attempting to load save from: %s" % file_path)
 	
 	if ResourceLoader.exists(file_path):
+		print("[SaveManager] Save file exists, loading...")
 		var save_data = ResourceLoader.load(file_path) as SaveData
 		if save_data:
 			current_save_slot = slot
 			current_save_data = save_data
+			print("[SaveManager] Loaded save - Deck size: %d, Collection size: %d" % [save_data.current_deck.size(), save_data.card_collection.size()])
 			return save_data
+		else:
+			push_error("[SaveManager] Failed to load save data from %s" % file_path)
+	else:
+		print("[SaveManager] Save file does not exist, creating new save")
 	
 	# If no save exists, create new empty save
 	return create_new_save(slot)
@@ -40,13 +47,26 @@ func save_game() -> void:
 		push_error("No active save to save!")
 		return
 	
+	# Ensure save directory exists
+	var dir = DirAccess.open("user://")
+	if not dir.dir_exists("saves"):
+		dir.make_dir("saves")
+	
 	var file_path = SAVE_DIR + (SAVE_FILE_TEMPLATE % current_save_slot)
+	print("[SaveManager] Saving to: %s" % file_path)
+	print("[SaveManager] Save data - Deck size: %d, Collection size: %d" % [current_save_data.current_deck.size(), current_save_data.card_collection.size()])
+	
 	var error = ResourceSaver.save(current_save_data, file_path)
 	
 	if error != OK:
 		push_error("Failed to save game: %d" % error)
 	else:
-		print("Game saved to slot %d" % current_save_slot)
+		print("[SaveManager] Game saved successfully to slot %d" % current_save_slot)
+		# Verify the file was created
+		if ResourceLoader.exists(file_path):
+			print("[SaveManager] Save file verified: %s exists" % file_path)
+		else:
+			push_error("[SaveManager] WARNING: Save file not found after save operation!")
 
 # Check if a save exists in slot
 func save_exists(slot: int) -> bool:

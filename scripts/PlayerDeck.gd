@@ -6,18 +6,41 @@ var discard_pile: Array[CardData] = []
 var original_deck: Array[CardData] = []  # Store the original full deck
 
 func _ready() -> void:
-	# Initialize the deck with 30 cards from example_cards
+	# Load deck from save data
 	initialize_deck()
 
-# Initialize the deck with 30 cards
+# Initialize the deck from save data (or create new if no save)
 func initialize_deck() -> void:
-	# Get the starter deck from ExampleCards
-	deck = ExampleCards.create_starter_deck()
-	# Store a copy of the original deck
-	original_deck = deck.duplicate(true)
+	# Check if SaveManager has a current save with a deck
+	if SaveManager and SaveManager.current_save_data:
+		var save_data = SaveManager.current_save_data
+		print("[PlayerDeck] Save data found - deck size in save: %d" % save_data.current_deck.size())
+		
+		# Load deck from save if it exists
+		if not save_data.current_deck.is_empty():
+			deck = save_data.get_current_deck()
+			print("[PlayerDeck] Loaded deck from save with %d cards" % deck.size())
+			if deck.size() > 0:
+				print("[PlayerDeck] First card: %s (rarity: %d, damage: %d)" % [deck[0].card_name, deck[0].rarity, deck[0].get_total_damage()])
+		else:
+			# Fallback: create starter deck if save has no deck (shouldn't happen, but safety)
+			print("[PlayerDeck] WARNING: Save has no deck, creating starter deck")
+			deck = ExampleCards.create_starter_deck()
+			save_data.set_current_deck(deck)
+			SaveManager.save_game()
+	else:
+		# No save loaded - create starter deck (shouldn't happen in normal flow)
+		print("[PlayerDeck] WARNING: No save data found, creating starter deck")
+		deck = ExampleCards.create_starter_deck()
+	
+	# Store a copy of the original deck for reference
+	original_deck = []
+	for card in deck:
+		original_deck.append(card.create_instance())
+	
 	# Shuffle the deck
 	shuffle_deck()
-	print("[PlayerDeck] Initialized deck with ", deck.size(), " cards")
+	print("[PlayerDeck] Initialized deck with %d cards" % deck.size())
 
 # Shuffle the deck randomly
 func shuffle_deck() -> void:
@@ -58,3 +81,26 @@ func get_deck_size() -> int:
 # Get the number of cards in discard pile
 func get_discard_size() -> int:
 	return discard_pile.size()
+
+# Save the current deck state to save data
+# Useful when player modifies their deck between runs
+func save_deck_to_save() -> void:
+	if SaveManager and SaveManager.current_save_data:
+		# Save the original deck (before shuffling/drawing)
+		SaveManager.current_save_data.set_current_deck(original_deck)
+		SaveManager.save_game()
+		print("[PlayerDeck] Saved deck to save data")
+	else:
+		push_warning("[PlayerDeck] Cannot save deck - no save data available")
+
+# Reset deck to original state (for starting a new run)
+func reset_deck() -> void:
+	deck.clear()
+	discard_pile.clear()
+	
+	# Restore from original deck
+	for card in original_deck:
+		deck.append(card.create_instance())
+	
+	shuffle_deck()
+	print("[PlayerDeck] Reset deck to original state with ", deck.size(), " cards")

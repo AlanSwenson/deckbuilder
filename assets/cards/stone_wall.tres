@@ -1,0 +1,33 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=11 format=3 uid="uid://bc7o8mr7gwcq8"]
+
+[ext_resource type="Script" uid="uid://cftaoej854jqn" path="res://scripts/card_data.gd" id="1_card"]
+[ext_resource type="Script" uid="uid://c01fxuq8gcclf" path="res://scripts/ability_slot.gd" id="2_slot"]
+[ext_resource type="Resource" path="res://assets/abilities/block.tres" id="3_block"]
+[ext_resource type="Resource" path="res://assets/abilities/heal.tres" id="4_heal"]
+[ext_resource type="Resource" path="res://assets/abilities/draw.tres" id="5_draw"]
+
+[sub_resource type="Resource" id="slot1"]
+script = ExtResource("2_slot")
+ability_type = ExtResource("3_block")
+
+[sub_resource type="Resource" id="slot2"]
+script = ExtResource("2_slot")
+ability_type = ExtResource("3_block")
+
+[sub_resource type="Resource" id="slot3"]
+script = ExtResource("2_slot")
+ability_type = ExtResource("4_heal")
+
+[sub_resource type="Resource" id="slot4"]
+script = ExtResource("2_slot")
+ability_type = ExtResource("3_block")
+
+[sub_resource type="Resource" id="slot5"]
+script = ExtResource("2_slot")
+ability_type = ExtResource("5_draw")
+
+[resource]
+script = ExtResource("1_card")
+card_name = "Stone Wall"
+element = 2
+ability_slots = Array[ExtResource("2_slot")]([SubResource("slot1"), SubResource("slot2"), SubResource("slot3"), SubResource("slot4"), SubResource("slot5")])

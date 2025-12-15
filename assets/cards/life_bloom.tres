@@ -1,0 +1,35 @@
+[gd_resource type="Resource" script_class="CardData" load_steps=7 format=3 uid="uid://card_life_bloom"]
+
+[ext_resource type="Script" path="res://scripts/card_data.gd" id="1_card"]
+[ext_resource type="Script" path="res://scripts/ability_slot.gd" id="2_slot"]
+[ext_resource type="Resource" uid="uid://c4heal_ability" path="res://assets/abilities/heal.tres" id="3_heal"]
+[ext_resource type="Resource" uid="uid://c4draw_ability" path="res://assets/abilities/draw.tres" id="4_draw"]
+[ext_resource type="Resource" uid="uid://c4block_ability" path="res://assets/abilities/block.tres" id="5_block"]
+
+[sub_resource type="Resource" id="slot1"]
+script = ExtResource("2_slot")
+ability_type = ExtResource("3_heal")
+
+[sub_resource type="Resource" id="slot2"]
+script = ExtResource("2_slot")
+ability_type = ExtResource("3_heal")
+
+[sub_resource type="Resource" id="slot3"]
+script = ExtResource("2_slot")
+ability_type = ExtResource("4_draw")
+
+[sub_resource type="Resource" id="slot4"]
+script = ExtResource("2_slot")
+ability_type = ExtResource("3_heal")
+
+[sub_resource type="Resource" id="slot5"]
+script = ExtResource("2_slot")
+ability_type = ExtResource("5_block")
+
+[resource]
+script = ExtResource("1_card")
+card_name = "Life Bloom"
+description = ""
+element = 3
+rarity = 0
+ability_slots = [SubResource("slot1"), SubResource("slot2"), SubResource("slot3"), SubResource("slot4"), SubResource("slot5")]

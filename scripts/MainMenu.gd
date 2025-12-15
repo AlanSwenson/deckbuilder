@@ -84,12 +84,26 @@ func _on_save_slot_pressed(slot: int):
 		# Initialize new game data
 		save_data.total_runs = 0
 		save_data.cards_collected = 0
-		# Create starter deck, etc.
+		save_data.current_act = 1
+		save_data.player_name = "Save Slot %d" % slot  # Set default name
+		
+		# Create starter deck and save it
+		var starter_deck = ExampleCards.create_starter_deck()
+		save_data.set_current_deck(starter_deck)
+		print("[MainMenu] Created starter deck with %d cards" % starter_deck.size())
+		print("[MainMenu] Deck saved - first card: %s (rarity: %d)" % [starter_deck[0].card_name if starter_deck.size() > 0 else "none", starter_deck[0].rarity if starter_deck.size() > 0 else -1])
 	else:
 		print("[MainMenu] Loading existing save from slot %d" % slot)
+		print("[MainMenu] Existing deck has %d cards" % save_data.current_deck.size())
+		if save_data.current_deck.size() > 0:
+			var first_card_dict = save_data.current_deck[0]
+			print("[MainMenu] First card in save: %s (rarity: %d)" % [first_card_dict.get("card_name", "unknown"), first_card_dict.get("rarity", -1)])
 	
-	# Save immediately to create the file
+	# Save immediately to create/persist the file
 	SaveManager.save_game()
+	
+	# Update the display to show the new save info
+	_update_save_slot_displays()
 	
 	# Load the game scene
 	print("[MainMenu] Changing scene to: %s" % GAME_SCENE)

@@ -19,6 +19,7 @@ config/icon="res://icon.svg"
 
 SaveManager="*res://scripts/SaveManager.gd"
 AbilityRegistry="*res://scripts/ability_registry.gd"
+CardRegistry="*res://scripts/card_registry.gd"
 
 [display]
 

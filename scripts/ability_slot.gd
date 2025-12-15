@@ -6,7 +6,7 @@ class_name AbilitySlot
 
 # The randomly rolled value for this specific card instance
 # This is set when the card is created/dropped and persists for the card's lifetime
-var rolled_value: int = 0
+@export var rolled_value: int = 0
 
 # Roll the value based on the card's rarity
 func roll_value(rarity: int) -> void:
