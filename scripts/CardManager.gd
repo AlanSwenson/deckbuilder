@@ -474,3 +474,21 @@ func notify_card_played(card: Node2D) -> void:
 	if player_hand and player_hand.has_method("remove_card_from_hand"):
 		player_hand.remove_card_from_hand(card)
 		print("[CardManager] Notified PlayerHand that card was played: ", card.name)
+	
+	# Trigger debounced autosave (save after a short delay to avoid too frequent saves)
+	_trigger_debounced_autosave()
+
+var _autosave_timer: SceneTreeTimer = null
+
+func _trigger_debounced_autosave() -> void:
+	# Cancel previous timer if it exists
+	if _autosave_timer:
+		_autosave_timer.timeout.disconnect(_do_autosave)
+	
+	# Create new timer (save 1 second after last card play)
+	_autosave_timer = get_tree().create_timer(1.0)
+	_autosave_timer.timeout.connect(_do_autosave)
+
+func _do_autosave() -> void:
+	if SaveManager:
+		SaveManager.autosave_game_state()

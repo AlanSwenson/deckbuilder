@@ -173,6 +173,10 @@ func _cleanup_turn() -> void:
 			# Always clear the flag when refill is done (whether successful or not)
 			is_refilling_hands = false
 			print("[TurnLogic] Hand refill complete - setting is_refilling_hands=false")
+			
+			# Autosave game state after turn cleanup
+			if SaveManager:
+				SaveManager.autosave_game_state()
 		else:
 			print("[TurnLogic] Game is over, skipping hand refill")
 			is_refilling_hands = false

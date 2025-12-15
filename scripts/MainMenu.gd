@@ -87,6 +87,9 @@ func _on_save_slot_pressed(slot: int):
 		save_data.current_act = 1
 		save_data.player_name = "Save Slot %d" % slot  # Set default name
 		
+		# Clear any previous match state
+		save_data.clear_match_state()
+		
 		# Create starter deck and save it
 		var starter_deck = ExampleCards.create_starter_deck()
 		save_data.set_current_deck(starter_deck)
@@ -98,6 +101,10 @@ func _on_save_slot_pressed(slot: int):
 		if save_data.current_deck.size() > 0:
 			var first_card_dict = save_data.current_deck[0]
 			print("[MainMenu] First card in save: %s (rarity: %d)" % [first_card_dict.get("card_name", "unknown"), first_card_dict.get("rarity", -1)])
+		
+		# Check if there's an in-progress match
+		if save_data.has_match_to_resume():
+			print("[MainMenu] Found in-progress match - will resume game state")
 	
 	# Save immediately to create/persist the file
 	SaveManager.save_game()

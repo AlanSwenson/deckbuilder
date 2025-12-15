@@ -30,6 +30,52 @@ func _ready() -> void:
 	# Create UI labels for HP display
 	_create_hp_ui()
 	update_hp_display()
+	
+	# Check for saved game state and load it
+	call_deferred("_check_and_load_saved_state")
+
+func _check_and_load_saved_state() -> void:
+	# Wait a frame to ensure all nodes are ready
+	await get_tree().process_frame
+	
+	if SaveManager and SaveManager.current_save_data:
+		if SaveManager.current_save_data.has_match_to_resume():
+			print("[GameState] Found saved match state, loading...")
+			var game_state_saver = GameStateSaver.new()
+			get_tree().current_scene.add_child(game_state_saver)
+			var success = await game_state_saver.load_game_state(SaveManager.current_save_data)
+			game_state_saver.queue_free()
+			
+			if success:
+				print("[GameState] Successfully loaded saved match state")
+				# Update hand positions after loading
+				var player_hand = get_parent().get_node_or_null("PlayerHand")
+				if player_hand and player_hand.has_method("update_hand_positions"):
+					player_hand.update_hand_positions()
+				
+				var enemy_hand = get_parent().get_node_or_null("EnemyHand")
+				if enemy_hand and enemy_hand.has_method("update_hand_positions"):
+					enemy_hand.update_hand_positions()
+				
+				# Autosave after loading to ensure state is persisted
+				if SaveManager:
+					await get_tree().create_timer(0.5).timeout  # Wait for everything to settle
+					SaveManager.autosave_game_state()
+			else:
+				print("[GameState] Failed to load saved match state, starting new game")
+				# Clear invalid match state
+				if SaveManager and SaveManager.current_save_data:
+					SaveManager.current_save_data.clear_match_state()
+		else:
+			print("[GameState] No saved match state, starting new game")
+			# Ensure match state is clear for new games
+			if SaveManager and SaveManager.current_save_data:
+				SaveManager.current_save_data.clear_match_state()
+			
+			# Autosave initial state after hands are dealt
+			await get_tree().create_timer(2.0).timeout  # Wait for hands to be dealt
+			if SaveManager:
+				SaveManager.autosave_game_state()
 
 func _create_hp_ui() -> void:
 	# Player HP label (bottom left)
@@ -143,6 +189,9 @@ func win_game() -> void:
 	game_won.emit()
 	show_game_over("VICTORY!", Color.GREEN)
 	print("[GameState] Player won!")
+	
+	# Clear match state when game ends
+	_clear_match_state()
 
 # Lose condition triggered
 func lose_game() -> void:
@@ -153,6 +202,16 @@ func lose_game() -> void:
 	game_lost.emit()
 	show_game_over("DEFEAT!", Color.RED)
 	print("[GameState] Player lost!")
+	
+	# Clear match state when game ends
+	_clear_match_state()
+
+# Clear saved match state (called when game ends)
+func _clear_match_state() -> void:
+	if SaveManager and SaveManager.current_save_data:
+		SaveManager.current_save_data.clear_match_state()
+		SaveManager.save_game()
+		print("[GameState] Cleared match state from save")
 
 # Show game over message
 func show_game_over(message: String, color: Color) -> void:

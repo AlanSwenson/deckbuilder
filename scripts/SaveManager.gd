@@ -90,3 +90,32 @@ func delete_save(slot: int) -> void:
 	var dir = DirAccess.open(SAVE_DIR)
 	if dir.file_exists(file_path):
 		dir.remove(file_path)
+
+# Autosave the current game state
+func autosave_game_state() -> void:
+	if current_save_data == null or current_save_slot == -1:
+		return
+	
+	var game_state_saver = GameStateSaver.new()
+	add_child(game_state_saver)
+	game_state_saver.save_game_state(current_save_data)
+	save_game()  # Persist to disk
+	game_state_saver.queue_free()
+	print("[SaveManager] Autosaved game state")
+
+# Load saved game state if it exists
+func load_saved_game_state() -> bool:
+	if current_save_data == null or not current_save_data.has_match_to_resume():
+		return false
+	
+	var game_state_saver = GameStateSaver.new()
+	add_child(game_state_saver)
+	var success = await game_state_saver.load_game_state(current_save_data)
+	game_state_saver.queue_free()
+	
+	if success:
+		print("[SaveManager] Loaded saved game state")
+	else:
+		print("[SaveManager] Failed to load game state")
+	
+	return success

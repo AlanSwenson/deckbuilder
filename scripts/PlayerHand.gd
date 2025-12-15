@@ -32,8 +32,16 @@ func _ready() -> void:
 	# Store these references for use in deal_cards
 	cards_to_deal.clear()  # Make sure it's empty
 	
-	# Start dealing cards automatically
+	# Check if we're loading a saved match state
 	await get_tree().process_frame  # Wait one frame to ensure everything is initialized
+	
+	# Only auto-deal if there's no saved match state to load
+	if SaveManager and SaveManager.current_save_data:
+		if SaveManager.current_save_data.has_match_to_resume():
+			print("[PlayerHand] Saved match state detected, skipping auto-deal")
+			return
+	
+	# Start dealing cards automatically
 	deal_cards()
 		
 func add_card_to_hand(card):

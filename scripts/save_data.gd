@@ -21,6 +21,21 @@ class_name SaveData
 @export var ingredients: Dictionary = {}
 @export var recipes_unlocked: Array[String] = []
 
+# In-progress match state (for autosave/crash recovery)
+@export var has_active_match: bool = false
+@export var match_player_hp: int = 100
+@export var match_enemy_hp: int = 100
+@export var match_game_status: int = 0  # GameState.GameStatus enum value
+@export var match_player_hand: Array[Dictionary] = []  # Cards in player hand
+@export var match_enemy_hand: Array[Dictionary] = []  # Cards in enemy hand
+@export var match_player_deck: Array[Dictionary] = []  # Remaining player deck
+@export var match_enemy_deck: Array[Dictionary] = []  # Remaining enemy deck
+@export var match_player_discard: Array[Dictionary] = []  # Player discard pile
+@export var match_enemy_discard: Array[Dictionary] = []  # Enemy discard pile
+@export var match_player_slots: Array[Dictionary] = []  # Cards in PlayerSlot1-5
+@export var match_enemy_slots: Array[Dictionary] = []  # Cards in EnemySlot1-5
+@export var match_turn_number: int = 0  # Current turn number
+
 func _init():
 	pass
 
@@ -54,8 +69,13 @@ func get_display_text() -> String:
 		# Show deck size (what player is actively using)
 		var deck_size = current_deck.size()
 		
+		# Check if there's an in-progress match
+		var match_status = ""
+		if has_active_match:
+			match_status = " [IN PROGRESS]"
+		
 		# Format: Name on first line, stats on second line, time on third
-		return "%s\n%d Runs • Act %d • %d Cards\nPlay Time: %s" % [display_name, total_runs, current_act, deck_size, time_str]
+		return "%s%s\n%d Runs • Act %d • %d Cards\nPlay Time: %s" % [display_name, match_status, total_runs, current_act, deck_size, time_str]
 
 # Add a card to the collection
 func add_card_to_collection(card: CardData) -> void:
@@ -110,3 +130,27 @@ func get_collection_summary() -> Dictionary:
 				summary["legendary"] += 1
 	
 	return summary
+
+# ============================================
+# MATCH STATE SAVE/LOAD (Autosave)
+# ============================================
+
+# Clear match state (when starting a new match)
+func clear_match_state() -> void:
+	has_active_match = false
+	match_player_hp = 100
+	match_enemy_hp = 100
+	match_game_status = 0
+	match_player_hand.clear()
+	match_enemy_hand.clear()
+	match_player_deck.clear()
+	match_enemy_deck.clear()
+	match_player_discard.clear()
+	match_enemy_discard.clear()
+	match_player_slots.clear()
+	match_enemy_slots.clear()
+	match_turn_number = 0
+
+# Check if there's an active match to resume
+func has_match_to_resume() -> bool:
+	return has_active_match and (not match_player_hand.is_empty() or not match_player_deck.is_empty())
