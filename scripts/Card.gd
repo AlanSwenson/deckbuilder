@@ -2,6 +2,65 @@ extends Node2D
 
 var hand_position
 var card_data: CardData = null  # The card data for this card
+var is_hovered: bool = false
+var shadow_sprite: Sprite2D = null
+
+func _ready() -> void:
+	# Connect Area2D signals for hover detection
+	var area = get_node_or_null("Area2D")
+	if area:
+		area.mouse_entered.connect(_on_mouse_entered)
+		area.mouse_exited.connect(_on_mouse_exited)
+		area.input_event.connect(_on_area_input_event)
+	
+	# Create drop shadow sprite (defer to ensure card image is ready)
+	call_deferred("_create_drop_shadow")
+
+func _create_drop_shadow() -> void:
+	# Find the main card sprite to duplicate for shadow
+	var card_image = get_node_or_null("CardImage")
+	if not card_image:
+		# Try again later if card image isn't ready
+		await get_tree().process_frame
+		card_image = get_node_or_null("CardImage")
+		if not card_image:
+			return
+	
+	# Create shadow sprite if it doesn't exist
+	if not shadow_sprite:
+		shadow_sprite = Sprite2D.new()
+		shadow_sprite.name = "DropShadow"
+		shadow_sprite.z_index = -10  # Behind everything
+		shadow_sprite.modulate = Color(0, 0, 0, 0)  # Start invisible
+		shadow_sprite.offset = Vector2(4, 4)  # Offset for drop shadow effect
+		add_child(shadow_sprite)
+	
+	# Update shadow texture
+	if card_image.texture:
+		shadow_sprite.texture = card_image.texture
+
+func _on_mouse_entered() -> void:
+	is_hovered = true
+	_update_shadow()
+
+func _on_mouse_exited() -> void:
+	is_hovered = false
+	_update_shadow()
+
+func _on_area_input_event(viewport: Node, event: InputEvent, shape_idx: int) -> void:
+	# Additional input handling if needed
+	pass
+
+func _update_shadow() -> void:
+	if shadow_sprite:
+		shadow_sprite.visible = is_hovered
+		# Animate shadow appearance
+		if is_hovered:
+			var tween = create_tween()
+			tween.tween_property(shadow_sprite, "modulate:a", 0.5, 0.1)
+		else:
+			var tween = create_tween()
+			tween.tween_property(shadow_sprite, "modulate:a", 0.0, 0.1)
 
 func set_card_number(number: int) -> void:
 	var label = get_node_or_null("CardNumberLabel")
@@ -118,6 +177,12 @@ func update_card_display() -> void:
 	if number_label:
 		# Keep the number label for testing/identification if needed
 		pass
+	
+	# Update shadow sprite texture if it exists
+	if shadow_sprite:
+		var card_image = get_node_or_null("CardImage")
+		if card_image and card_image.texture:
+			shadow_sprite.texture = card_image.texture
 
 # Get the symbol for each element type
 func _get_element_symbol(element_type: CardData.ElementType) -> String:
