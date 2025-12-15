@@ -25,6 +25,7 @@ enum Rarity {
 @export var description: String = ""
 @export var element: ElementType = ElementType.SULFUR
 @export var rarity: Rarity = Rarity.COMMON
+@export var burnable: bool = true  # Whether this card can be destroyed/removed from collection
 
 # Ability slots - each card can have up to 5 abilities
 # Only slots up to get_slot_count() are active based on rarity
@@ -217,6 +218,7 @@ func to_save_dict() -> Dictionary:
 		"card_name": card_name,
 		"element": element,
 		"rarity": rarity,
+		"burnable": burnable,
 		"slots": slots_data
 	}
 
@@ -226,6 +228,7 @@ static func from_save_dict(data: Dictionary) -> CardData:
 	card.card_name = data.get("card_name", "")
 	card.element = data.get("element", ElementType.SULFUR)
 	card.rarity = data.get("rarity", Rarity.COMMON)
+	card.burnable = data.get("burnable", true)  # Default to true for backwards compatibility
 	
 	var slots_data = data.get("slots", [])
 	for slot_data in slots_data:

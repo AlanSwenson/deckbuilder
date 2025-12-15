@@ -90,11 +90,27 @@ func _on_save_slot_pressed(slot: int):
 		# Clear any previous match state
 		save_data.clear_match_state()
 		
-		# Create starter deck and save it
-		var starter_deck = ExampleCards.create_starter_deck()
-		save_data.set_current_deck(starter_deck)
-		print("[MainMenu] Created starter deck with %d cards" % starter_deck.size())
-		print("[MainMenu] Deck saved - first card: %s (rarity: %d)" % [starter_deck[0].card_name if starter_deck.size() > 0 else "none", starter_deck[0].rarity if starter_deck.size() > 0 else -1])
+		# Create starter collection and save it
+		var starter_collection = ExampleCards.create_starter_collection()
+		# Add all cards to collection
+		for card in starter_collection:
+			save_data.add_card_to_collection(card)
+		
+		# Create a default deck from the collection (can be changed later)
+		# For now, use the first 30 cards as the default deck
+		var default_deck = starter_collection.slice(0, mini(30, starter_collection.size()))
+		save_data.set_current_deck(default_deck)
+		
+		# Also save it as a named deck
+		save_data.decks["Default Deck"] = []
+		for card in default_deck:
+			save_data.decks["Default Deck"].append(card.to_save_dict())
+		save_data.current_deck_name = "Default Deck"
+		
+		print("[MainMenu] Created starter collection with %d cards" % starter_collection.size())
+		print("[MainMenu] Created default deck with %d cards" % default_deck.size())
+		if starter_collection.size() > 0:
+			print("[MainMenu] First card: %s (rarity: %d)" % [starter_collection[0].card_name, starter_collection[0].rarity])
 	else:
 		print("[MainMenu] Loading existing save from slot %d" % slot)
 		print("[MainMenu] Existing deck has %d cards" % save_data.current_deck.size())

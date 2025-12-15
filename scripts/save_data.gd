@@ -17,6 +17,11 @@ class_name SaveData
 # Same format as card_collection
 @export var current_deck: Array[Dictionary] = []
 
+# Multiple named decks - allows players to create and switch between decks
+# Format: {"Deck Name": Array[Dictionary], ...}
+@export var decks: Dictionary = {}  # Dictionary of deck_name -> Array[Dictionary]
+@export var current_deck_name: String = "Default Deck"  # Name of the currently active deck
+
 # Add more data as needed
 @export var ingredients: Dictionary = {}
 @export var recipes_unlocked: Array[String] = []
@@ -41,9 +46,9 @@ func _init():
 
 # Check if this save slot has data
 func is_empty() -> bool:
-	# A save is empty if it has no runs AND no deck
-	# This allows new saves with decks to be considered "not empty"
-	return total_runs == 0 and current_deck.is_empty()
+	# A save is empty if it has no runs AND no collection
+	# This allows new saves with collections to be considered "not empty"
+	return total_runs == 0 and card_collection.is_empty()
 
 # Get display text for save slot button
 func get_display_text() -> String:
@@ -66,8 +71,8 @@ func get_display_text() -> String:
 		else:
 			time_str = "<1m"
 		
-		# Show deck size (what player is actively using)
-		var deck_size = current_deck.size()
+		# Show collection size (total cards owned)
+		var collection_size = card_collection.size()
 		
 		# Check if there's an in-progress match
 		var match_status = ""
@@ -75,7 +80,7 @@ func get_display_text() -> String:
 			match_status = " [IN PROGRESS]"
 		
 		# Format: Name on first line, stats on second line, time on third
-		return "%s%s\n%d Runs • Act %d • %d Cards\nPlay Time: %s" % [display_name, match_status, total_runs, current_act, deck_size, time_str]
+		return "%s%s\n%d Runs • Act %d • %d Cards\nPlay Time: %s" % [display_name, match_status, total_runs, current_act, collection_size, time_str]
 
 # Add a card to the collection
 func add_card_to_collection(card: CardData) -> void:
@@ -154,3 +159,123 @@ func clear_match_state() -> void:
 # Check if there's an active match to resume
 func has_match_to_resume() -> bool:
 	return has_active_match and (not match_player_hand.is_empty() or not match_player_deck.is_empty())
+
+# ============================================
+# DECK MANAGEMENT
+# ============================================
+
+# Create a new deck from the collection
+func create_deck(deck_name: String, card_indices: Array[int]) -> bool:
+	if deck_name == "":
+		return false
+	
+	var deck_cards: Array[Dictionary] = []
+	for idx in card_indices:
+		if idx >= 0 and idx < card_collection.size():
+			deck_cards.append(card_collection[idx])
+	
+	decks[deck_name] = deck_cards
+	return true
+
+# Get a deck by name
+func get_deck(deck_name: String) -> Array[CardData]:
+	if deck_name in decks:
+		var cards: Array[CardData] = []
+		for card_dict in decks[deck_name]:
+			cards.append(CardData.from_save_dict(card_dict))
+		return cards
+	return []
+
+# Delete a deck
+func delete_deck(deck_name: String) -> bool:
+	if deck_name in decks:
+		decks.erase(deck_name)
+		# If we deleted the current deck, switch to default
+		if current_deck_name == deck_name:
+			if decks.has("Default Deck"):
+				current_deck_name = "Default Deck"
+				current_deck = decks["Default Deck"]
+			else:
+				current_deck_name = ""
+				current_deck.clear()
+		return true
+	return false
+
+# Set the current active deck
+func set_active_deck(deck_name: String) -> bool:
+	if deck_name in decks:
+		current_deck_name = deck_name
+		current_deck = decks[deck_name]
+		return true
+	return false
+
+# ============================================
+# CARD BURNING (Destroying cards)
+# ============================================
+
+# Burn (destroy) a card from the collection
+# Only works if the card is burnable
+func burn_card(card_index: int) -> bool:
+	if card_index < 0 or card_index >= card_collection.size():
+		return false
+	
+	var card_dict = card_collection[card_index]
+	var card = CardData.from_save_dict(card_dict)
+	
+	# Check if card is burnable
+	if not card.burnable:
+		print("[SaveData] Card %s is not burnable" % card.card_name)
+		return false
+	
+	# Remove from collection
+	card_collection.remove_at(card_index)
+	cards_collected = card_collection.size()
+	
+	# Remove from all decks that contain this card
+	for deck_name in decks.keys():
+		var deck = decks[deck_name]
+		var i = 0
+		while i < deck.size():
+			# Compare by card data (name, element, rarity, and ability values)
+			if _cards_match(deck[i], card_dict):
+				deck.remove_at(i)
+			else:
+				i += 1
+	
+	# Also remove from current_deck if it matches
+	var i = 0
+	while i < current_deck.size():
+		if _cards_match(current_deck[i], card_dict):
+			current_deck.remove_at(i)
+		else:
+			i += 1
+	
+	print("[SaveData] Burned card: %s" % card.card_name)
+	return true
+
+# Helper to check if two card dictionaries match (same card instance)
+func _cards_match(card1: Dictionary, card2: Dictionary) -> bool:
+	# For now, match by name, element, rarity, and ability values
+	# This is a simple approach - you might want more sophisticated matching
+	if card1.get("card_name") != card2.get("card_name"):
+		return false
+	if card1.get("element") != card2.get("element"):
+		return false
+	if card1.get("rarity") != card2.get("rarity"):
+		return false
+	
+	# Compare ability slots
+	var slots1 = card1.get("slots", [])
+	var slots2 = card2.get("slots", [])
+	if slots1.size() != slots2.size():
+		return false
+	
+	for i in range(slots1.size()):
+		var slot1 = slots1[i]
+		var slot2 = slots2[i]
+		if slot1.get("ability_id") != slot2.get("ability_id"):
+			return false
+		if slot1.get("rolled_value") != slot2.get("rolled_value"):
+			return false
+	
+	return true

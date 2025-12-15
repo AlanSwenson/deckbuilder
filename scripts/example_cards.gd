@@ -1,4 +1,4 @@
-# Deck factory - creates starter decks using CardRegistry
+# Collection factory - creates starter collections using CardRegistry
 # Individual cards can be created directly via CardRegistry.create_card()
 
 class_name ExampleCards
@@ -18,73 +18,22 @@ static func create_starter_enemy_deck() -> Array[CardData]:
 			deck.append(card)
 	return deck
 
-# Create a starter deck (30 cards) - mixed rarities for starter
-static func create_starter_deck() -> Array[CardData]:
-	var deck: Array[CardData] = []
+# Create starter collection - 4 of each common card
+static func create_starter_collection() -> Array[CardData]:
+	var collection: Array[CardData] = []
 	
-	# 6 Sulfur cards
-	for i in 3:
-		var card = CardRegistry.create_card("Flame Burst", CardData.Rarity.COMMON)
-		if card:
-			deck.append(card)
-	for i in 2:
-		var card = CardRegistry.create_card("Sulfur Shard", CardData.Rarity.COMMON)
-		if card:
-			deck.append(card)
-	var inferno = CardRegistry.create_card("Inferno", CardData.Rarity.RARE)
-	if inferno:
-		deck.append(inferno)
+	# Get all available card names from registry
+	var all_card_names = CardRegistry.get_all_card_names()
 	
-	# 6 Mercury cards
-	for i in 4:
-		var card = CardRegistry.create_card("Quicksilver", CardData.Rarity.COMMON)
-		if card:
-			deck.append(card)
-	for i in 2:
-		var card = CardRegistry.create_card("Flux", CardData.Rarity.COMMON)
-		if card:
-			deck.append(card)
+	# Create 4 copies of each card in common rarity
+	for card_name in all_card_names:
+		for i in 4:
+			var card = CardRegistry.create_card(card_name, CardData.Rarity.COMMON)
+			if card:
+				collection.append(card)
 	
-	# 8 Salt cards
-	for i in 4:
-		var card = CardRegistry.create_card("Stone Wall", CardData.Rarity.COMMON)
-		if card:
-			deck.append(card)
-	for i in 2:
-		var card = CardRegistry.create_card("Salt Barrier", CardData.Rarity.COMMON)
-		if card:
-			deck.append(card)
-	for i in 2:
-		var card = CardRegistry.create_card("Granite Shield", CardData.Rarity.RARE)
-		if card:
-			deck.append(card)
-	
-	# 6 Vitae cards
-	for i in 3:
-		var card = CardRegistry.create_card("Life Bloom", CardData.Rarity.COMMON)
-		if card:
-			deck.append(card)
-	for i in 2:
-		var card = CardRegistry.create_card("Regeneration", CardData.Rarity.COMMON)
-		if card:
-			deck.append(card)
-	var vital = CardRegistry.create_card("Vital Surge", CardData.Rarity.RARE)
-	if vital:
-		deck.append(vital)
-	
-	# 4 Aether cards
-	for i in 2:
-		var card = CardRegistry.create_card("Aether Bolt", CardData.Rarity.RARE)
-		if card:
-			deck.append(card)
-	var spirit = CardRegistry.create_card("Spirit Echo", CardData.Rarity.EPIC)
-	if spirit:
-		deck.append(spirit)
-	var void_card = CardRegistry.create_card("Void Shift", CardData.Rarity.RARE)
-	if void_card:
-		deck.append(void_card)
-	
-	return deck
+	print("[ExampleCards] Created starter collection with %d cards (4 of each)" % collection.size())
+	return collection
 
 # ============================================
 # UTILITY METHODS

@@ -23,15 +23,20 @@ func initialize_deck() -> void:
 			if deck.size() > 0:
 				print("[PlayerDeck] First card: %s (rarity: %d, damage: %d)" % [deck[0].card_name, deck[0].rarity, deck[0].get_total_damage()])
 		else:
-			# Fallback: create starter deck if save has no deck (shouldn't happen, but safety)
-			print("[PlayerDeck] WARNING: Save has no deck, creating starter deck")
-			deck = ExampleCards.create_starter_deck()
+			# Fallback: create starter collection if save has no deck (shouldn't happen, but safety)
+			print("[PlayerDeck] WARNING: Save has no deck, creating starter collection")
+			var starter_collection = ExampleCards.create_starter_collection()
+			for card in starter_collection:
+				save_data.add_card_to_collection(card)
+			# Use first 30 cards as default deck
+			deck = starter_collection.slice(0, mini(30, starter_collection.size()))
 			save_data.set_current_deck(deck)
 			SaveManager.save_game()
 	else:
-		# No save loaded - create starter deck (shouldn't happen in normal flow)
-		print("[PlayerDeck] WARNING: No save data found, creating starter deck")
-		deck = ExampleCards.create_starter_deck()
+		# No save loaded - create starter collection (shouldn't happen in normal flow)
+		print("[PlayerDeck] WARNING: No save data found, creating starter collection")
+		var starter_collection = ExampleCards.create_starter_collection()
+		deck = starter_collection.slice(0, mini(30, starter_collection.size()))
 	
 	# Store a copy of the original deck for reference
 	original_deck = []
