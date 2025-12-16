@@ -47,19 +47,34 @@ theme_override_constants/margin_bottom = 20
 layout_mode = 2
 theme_override_constants/separation = 15
 
-[node name="SaveSlot1" type="Button" parent="CenterContainer/VBoxContainer/MarginContainer/VBoxContainer"]
+[node name="SaveSlot1Container" type="HBoxContainer" parent="CenterContainer/VBoxContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="SaveSlot1" type="Button" parent="CenterContainer/VBoxContainer/MarginContainer/VBoxContainer/SaveSlot1Container"]
 custom_minimum_size = Vector2(400, 80)
 layout_mode = 2
+size_flags_horizontal = 3
 text = "Empty Slot"
 
-[node name="SaveSlot2" type="Button" parent="CenterContainer/VBoxContainer/MarginContainer/VBoxContainer"]
+[node name="SaveSlot2Container" type="HBoxContainer" parent="CenterContainer/VBoxContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="SaveSlot2" type="Button" parent="CenterContainer/VBoxContainer/MarginContainer/VBoxContainer/SaveSlot2Container"]
 custom_minimum_size = Vector2(400, 80)
 layout_mode = 2
+size_flags_horizontal = 3
 text = "Empty Slot"
 
-[node name="SaveSlot3" type="Button" parent="CenterContainer/VBoxContainer/MarginContainer/VBoxContainer"]
+[node name="SaveSlot3Container" type="HBoxContainer" parent="CenterContainer/VBoxContainer/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="SaveSlot3" type="Button" parent="CenterContainer/VBoxContainer/MarginContainer/VBoxContainer/SaveSlot3Container"]
 custom_minimum_size = Vector2(400, 80)
 layout_mode = 2
+size_flags_horizontal = 3
 text = "Empty Slot"
 
 [node name="QuitButton" type="Button" parent="CenterContainer/VBoxContainer"]

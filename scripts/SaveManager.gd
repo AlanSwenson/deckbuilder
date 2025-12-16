@@ -86,10 +86,24 @@ func peek_save(slot: int) -> SaveData:
 
 # Delete a save slot
 func delete_save(slot: int) -> void:
-	var file_path = SAVE_DIR + (SAVE_FILE_TEMPLATE % slot)
+	var file_name = SAVE_FILE_TEMPLATE % slot
 	var dir = DirAccess.open(SAVE_DIR)
-	if dir.file_exists(file_path):
-		dir.remove(file_path)
+	if not dir:
+		push_error("[SaveManager] Cannot open save directory")
+		return
+	
+	if dir.file_exists(file_name):
+		var error = dir.remove(file_name)
+		if error == OK:
+			print("[SaveManager] Successfully deleted save slot %d" % slot)
+			# If this was the current save slot, clear the reference
+			if current_save_slot == slot:
+				current_save_slot = -1
+				current_save_data = null
+		else:
+			push_error("[SaveManager] Failed to delete save slot %d: %d" % [slot, error])
+	else:
+		print("[SaveManager] Save slot %d does not exist, nothing to delete" % slot)
 
 # Autosave the current game state
 func autosave_game_state() -> void:
