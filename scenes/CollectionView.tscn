@@ -1,0 +1,109 @@
+[gd_scene load_steps=2 format=3 uid="uid://bsbe7k15xy8rq"]
+
+[ext_resource type="Script" path="res://scripts/CollectionView.gd" id="1_coll"]
+
+[node name="CollectionView" type="Control"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("1_coll")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 10
+
+[node name="FilterBar" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="FilterLabel" type="Label" parent="VBoxContainer/FilterBar"]
+layout_mode = 2
+text = "Filter:"
+vertical_alignment = 1
+
+[node name="FilterAll" type="Button" parent="VBoxContainer/FilterBar"]
+custom_minimum_size = Vector2(60, 35)
+layout_mode = 2
+toggle_mode = true
+button_pressed = true
+text = "All"
+
+[node name="FilterSulfur" type="Button" parent="VBoxContainer/FilterBar"]
+custom_minimum_size = Vector2(80, 35)
+layout_mode = 2
+toggle_mode = true
+text = "🔥 Sulfur"
+
+[node name="FilterMercury" type="Button" parent="VBoxContainer/FilterBar"]
+custom_minimum_size = Vector2(90, 35)
+layout_mode = 2
+toggle_mode = true
+text = "💧 Mercury"
+
+[node name="FilterSalt" type="Button" parent="VBoxContainer/FilterBar"]
+custom_minimum_size = Vector2(70, 35)
+layout_mode = 2
+toggle_mode = true
+text = "⛰️ Salt"
+
+[node name="FilterVitae" type="Button" parent="VBoxContainer/FilterBar"]
+custom_minimum_size = Vector2(80, 35)
+layout_mode = 2
+toggle_mode = true
+text = "🌿 Vitae"
+
+[node name="FilterAether" type="Button" parent="VBoxContainer/FilterBar"]
+custom_minimum_size = Vector2(80, 35)
+layout_mode = 2
+toggle_mode = true
+text = "⭐ Aether"
+
+[node name="SortBar" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="SortLabel" type="Label" parent="VBoxContainer/SortBar"]
+layout_mode = 2
+text = "Sort by:"
+vertical_alignment = 1
+
+[node name="SortName" type="Button" parent="VBoxContainer/SortBar"]
+custom_minimum_size = Vector2(80, 35)
+layout_mode = 2
+toggle_mode = true
+button_pressed = true
+text = "Name"
+
+[node name="SortRarity" type="Button" parent="VBoxContainer/SortBar"]
+custom_minimum_size = Vector2(80, 35)
+layout_mode = 2
+toggle_mode = true
+text = "Rarity"
+
+[node name="SortElement" type="Button" parent="VBoxContainer/SortBar"]
+custom_minimum_size = Vector2(80, 35)
+layout_mode = 2
+toggle_mode = true
+text = "Element"
+
+[node name="ScrollContainer" type="ScrollContainer" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="GridContainer" type="GridContainer" parent="VBoxContainer/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/h_separation = 15
+theme_override_constants/v_separation = 15
+columns = 10
+
+[node name="SummaryLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Showing 56 cards | Total: 56 | Common: 40 | Uncommon: 10 | Rare: 4 | Epic: 2 | Legendary: 0"

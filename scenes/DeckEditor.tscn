@@ -1,0 +1,183 @@
+[gd_scene load_steps=2 format=3 uid="uid://y1jl3xm3b1l1"]
+
+[ext_resource type="Script" path="res://scripts/DeckEditor.gd" id="1_editor"]
+
+[node name="DeckEditor" type="Control"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_editor")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.7)
+
+[node name="PanelContainer" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 50.0
+offset_top = 30.0
+offset_right = -50.0
+offset_bottom = -30.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer"]
+layout_mode = 2
+theme_override_constants/separation = 15
+
+[node name="Header" type="HBoxContainer" parent="PanelContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 15
+
+[node name="TitleLabel" type="Label" parent="PanelContainer/VBoxContainer/Header"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Deck Editor"
+
+[node name="DeckNameLabel" type="Label" parent="PanelContainer/VBoxContainer/Header"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Deck Name:"
+vertical_alignment = 1
+
+[node name="DeckNameInput" type="LineEdit" parent="PanelContainer/VBoxContainer/Header"]
+custom_minimum_size = Vector2(300, 40)
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Enter deck name..."
+
+[node name="ContentHBox" type="HBoxContainer" parent="PanelContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 20
+
+[node name="CollectionPanel" type="PanelContainer" parent="PanelContainer/VBoxContainer/ContentHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.5
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer/VBoxContainer/ContentHBox/CollectionPanel"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="CollectionLabel" type="Label" parent="PanelContainer/VBoxContainer/ContentHBox/CollectionPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Your Collection (click to add)"
+
+[node name="FilterBar" type="HBoxContainer" parent="PanelContainer/VBoxContainer/ContentHBox/CollectionPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="FilterAll" type="Button" parent="PanelContainer/VBoxContainer/ContentHBox/CollectionPanel/VBoxContainer/FilterBar"]
+custom_minimum_size = Vector2(50, 30)
+layout_mode = 2
+toggle_mode = true
+button_pressed = true
+text = "All"
+
+[node name="FilterSulfur" type="Button" parent="PanelContainer/VBoxContainer/ContentHBox/CollectionPanel/VBoxContainer/FilterBar"]
+custom_minimum_size = Vector2(30, 30)
+layout_mode = 2
+toggle_mode = true
+text = "🔥"
+
+[node name="FilterMercury" type="Button" parent="PanelContainer/VBoxContainer/ContentHBox/CollectionPanel/VBoxContainer/FilterBar"]
+custom_minimum_size = Vector2(30, 30)
+layout_mode = 2
+toggle_mode = true
+text = "💧"
+
+[node name="FilterSalt" type="Button" parent="PanelContainer/VBoxContainer/ContentHBox/CollectionPanel/VBoxContainer/FilterBar"]
+custom_minimum_size = Vector2(30, 30)
+layout_mode = 2
+toggle_mode = true
+text = "⛰️"
+
+[node name="FilterVitae" type="Button" parent="PanelContainer/VBoxContainer/ContentHBox/CollectionPanel/VBoxContainer/FilterBar"]
+custom_minimum_size = Vector2(30, 30)
+layout_mode = 2
+toggle_mode = true
+text = "🌿"
+
+[node name="FilterAether" type="Button" parent="PanelContainer/VBoxContainer/ContentHBox/CollectionPanel/VBoxContainer/FilterBar"]
+custom_minimum_size = Vector2(30, 30)
+layout_mode = 2
+toggle_mode = true
+text = "⭐"
+
+[node name="ScrollContainer" type="ScrollContainer" parent="PanelContainer/VBoxContainer/ContentHBox/CollectionPanel/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="CollectionGrid" type="GridContainer" parent="PanelContainer/VBoxContainer/ContentHBox/CollectionPanel/VBoxContainer/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
+columns = 8
+
+[node name="DeckPanel" type="PanelContainer" parent="PanelContainer/VBoxContainer/ContentHBox"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer/VBoxContainer/ContentHBox/DeckPanel"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="DeckLabel" type="Label" parent="PanelContainer/VBoxContainer/ContentHBox/DeckPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Deck Contents (click to remove)"
+
+[node name="CardCountLabel" type="Label" parent="PanelContainer/VBoxContainer/ContentHBox/DeckPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "0 / 40 cards (need 20 more)"
+
+[node name="ClearButton" type="Button" parent="PanelContainer/VBoxContainer/ContentHBox/DeckPanel/VBoxContainer"]
+custom_minimum_size = Vector2(100, 30)
+layout_mode = 2
+size_flags_horizontal = 0
+text = "Clear All"
+
+[node name="ScrollContainer" type="ScrollContainer" parent="PanelContainer/VBoxContainer/ContentHBox/DeckPanel/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="DeckGrid" type="GridContainer" parent="PanelContainer/VBoxContainer/ContentHBox/DeckPanel/VBoxContainer/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/h_separation = 8
+theme_override_constants/v_separation = 8
+columns = 5
+
+[node name="Footer" type="HBoxContainer" parent="PanelContainer/VBoxContainer"]
+layout_mode = 2
+alignment = 2
+theme_override_constants/separation = 15
+
+[node name="CancelButton" type="Button" parent="PanelContainer/VBoxContainer/Footer"]
+custom_minimum_size = Vector2(120, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Cancel"
+
+[node name="SaveButton" type="Button" parent="PanelContainer/VBoxContainer/Footer"]
+custom_minimum_size = Vector2(120, 50)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Save Deck"

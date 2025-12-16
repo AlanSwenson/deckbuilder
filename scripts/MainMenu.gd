@@ -6,8 +6,9 @@ var save_slot_3: Button
 var quit_button: Button
 var delete_buttons: Array[Button] = []
 
-# Reference to your combat/game scene
+# Reference to scenes
 const GAME_SCENE = "res://main.tscn"
+const HUB_SCENE = "res://scenes/PlayerHub.tscn"
 
 func _ready():
 	# Get node references
@@ -187,9 +188,9 @@ func _on_save_slot_pressed(slot: int):
 	# Update the display to show the new save info
 	_update_save_slot_displays()
 	
-	# Load the game scene
-	print("[MainMenu] Changing scene to: %s" % GAME_SCENE)
-	var error = get_tree().change_scene_to_file(GAME_SCENE)
+	# Load the hub scene (instead of going directly to game)
+	print("[MainMenu] Changing scene to: %s" % HUB_SCENE)
+	var error = get_tree().change_scene_to_file(HUB_SCENE)
 	if error != OK:
 		push_error("[MainMenu] Failed to change scene: %d" % error)
 
