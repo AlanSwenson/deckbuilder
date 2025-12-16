@@ -12,3 +12,6 @@ export_presets.cfg
 # IDE-specific
 .vscode/
 /android/
+
+# Large test assets (can be regenerated or are work-in-progress)
+assets/art/backgrounds/TestBackground.png
