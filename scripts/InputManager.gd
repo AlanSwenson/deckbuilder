@@ -22,6 +22,8 @@ const CARD_HEIGHT: float = 209.0  # Card height in pixels
 # References
 var card_manager: Node2D = null
 var deck_view: CanvasLayer = null
+var turn_logic: Node2D = null
+var game_state: Node2D = null
 
 func _ready() -> void:
 	# Find CardManager
@@ -33,6 +35,15 @@ func _ready() -> void:
 	deck_view = get_node_or_null("../DeckView")
 	if not deck_view:
 		deck_view = get_tree().current_scene.get_node_or_null("DeckView")
+	
+	# Find TurnLogic and GameState for keyboard shortcuts
+	turn_logic = get_node_or_null("../TurnLogic")
+	if not turn_logic:
+		turn_logic = get_tree().current_scene.get_node_or_null("TurnLogic")
+	
+	game_state = get_node_or_null("../GameState")
+	if not game_state:
+		game_state = get_tree().current_scene.get_node_or_null("GameState")
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(_delta: float) -> void:
@@ -438,6 +449,23 @@ func _is_mouse_over_hand_area() -> bool:
 	
 	var mouse_pos = get_global_mouse_position()
 	return player_hand.is_position_in_hand_area(mouse_pos)
+
+# Handle keyboard input
+func _input(event: InputEvent) -> void:
+	# Bind Enter/Return key to Play Hand button
+	if event.is_action_pressed("ui_accept") or (event is InputEventKey and event.pressed and event.keycode == KEY_ENTER):
+		# Only trigger if game is playing and not in a menu/view
+		if game_state and game_state.has_method("is_game_playing"):
+			if game_state.is_game_playing():
+				# Check if DeckView is open - don't trigger if it is
+				if deck_view and deck_view.visible:
+					return
+				
+				# Trigger the play hand action via TurnLogic
+				if turn_logic and turn_logic.has_method("_on_play_hand_pressed"):
+					turn_logic._on_play_hand_pressed()
+					# Consume the event so it doesn't trigger other actions
+					get_viewport().set_input_as_handled()
 
 # Add a card to the hand
 func _add_card_to_hand(card: Node2D) -> void:
