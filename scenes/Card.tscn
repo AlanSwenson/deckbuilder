@@ -336,6 +336,7 @@ _data = {
 script = ExtResource("1_tgmmg")
 
 [node name="CardImageBack" type="Sprite2D" parent="."]
+visible = false
 texture = ExtResource("2_4dx8l")
 
 [node name="CardImage" type="Sprite2D" parent="."]
@@ -351,38 +352,35 @@ shape = SubResource("RectangleShape2D_ig7tw")
 
 [node name="CardNumberLabel" type="Label" parent="."]
 modulate = Color(1, 1, 1, 0)
-offset_left = -30.0
-offset_top = -105.0
-offset_right = 30.0
-offset_bottom = -75.0
+offset_left = 6.0
+offset_top = 70.0
+offset_right = 66.0
+offset_bottom = 100.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 4
-theme_override_font_sizes/font_size = 36
+theme_override_font_sizes/font_size = 21
 text = "0"
-horizontal_alignment = 1
+horizontal_alignment = 2
 vertical_alignment = 1
 
 [node name="CardNameLabel" type="Label" parent="."]
 modulate = Color(1, 1, 1, 0)
 offset_left = -70.0
-offset_top = 50.0
+offset_top = -100.0
 offset_right = 70.0
-offset_bottom = 90.0
+offset_bottom = -60.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
-theme_override_constants/outline_size = 4
-theme_override_font_sizes/font_size = 18
+theme_override_font_sizes/font_size = 13
 text = "Card Name"
 horizontal_alignment = 1
-vertical_alignment = 1
 
 [node name="ElementSymbolLabel" type="Label" parent="."]
 modulate = Color(1, 1, 1, 0)
 offset_left = -20.0
-offset_top = -55.0
+offset_top = -50.0
 offset_right = 20.0
-offset_bottom = -55.0
+offset_bottom = -20.0
 theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 2
@@ -397,7 +395,7 @@ offset_left = -65.0
 offset_top = -20.0
 offset_right = 65.0
 offset_bottom = 40.0
-theme_override_colors/font_color = Color(0, 0, 0, 1)
+theme_override_colors/font_color = Color(1, 1, 1, 1)
 theme_override_font_sizes/font_size = 12
 text = "Description"
 horizontal_alignment = 1
@@ -407,9 +405,9 @@ autowrap_mode = 2
 [node name="DamageLabel" type="Label" parent="."]
 modulate = Color(1, 1, 1, 0)
 offset_left = -70.0
-offset_top = -100.0
+offset_top = -74.0
 offset_right = -40.0
-offset_bottom = -80.0
+offset_bottom = -54.0
 theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 3
@@ -421,9 +419,9 @@ vertical_alignment = 1
 [node name="HealLabel" type="Label" parent="."]
 modulate = Color(1, 1, 1, 0)
 offset_left = 40.0
-offset_top = -100.0
+offset_top = -74.0
 offset_right = 70.0
-offset_bottom = -80.0
+offset_bottom = -54.0
 theme_override_colors/font_color = Color(0.3, 1, 0.3, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 3
@@ -435,9 +433,9 @@ vertical_alignment = 1
 [node name="BlockLabel" type="Label" parent="."]
 modulate = Color(1, 1, 1, 0)
 offset_left = -15.0
-offset_top = -100.0
+offset_top = -74.0
 offset_right = 15.0
-offset_bottom = -80.0
+offset_bottom = -54.0
 theme_override_colors/font_color = Color(0.3, 0.5, 1, 1)
 theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
 theme_override_constants/outline_size = 3
