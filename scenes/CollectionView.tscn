@@ -101,7 +101,7 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_constants/h_separation = 15
 theme_override_constants/v_separation = 15
-columns = 10
+columns = 6
 
 [node name="SummaryLabel" type="Label" parent="VBoxContainer"]
 layout_mode = 2

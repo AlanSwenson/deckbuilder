@@ -5,6 +5,7 @@ signal editor_closed()
 
 const MIN_DECK_SIZE = 20
 const MAX_DECK_SIZE = 40
+const CARD_SCENE = preload("res://scenes/Card.tscn")
 
 # Filter options
 enum FilterElement { ALL, SULFUR, MERCURY, SALT, VITAE, AETHER }
@@ -220,131 +221,129 @@ func _refresh_deck_display():
 func _create_collection_card_display(card_dict: Dictionary, index: int, in_deck: bool) -> Control:
 	var card_data = CardData.from_save_dict(card_dict)
 	
-	var card_display = Button.new()
-	card_display.custom_minimum_size = Vector2(100, 140)
-	card_display.text = ""
-	card_display.clip_text = true
+	# Create a button wrapper for clickability
+	var card_button = Button.new()
+	card_button.custom_minimum_size = Vector2(148, 209)
+	card_button.text = ""
+	card_button.flat = true
 	
-	# Style based on whether it's in the deck
-	var style = StyleBoxFlat.new()
-	style.bg_color = Color(0.15, 0.15, 0.18, 1.0) if not in_deck else Color(0.1, 0.15, 0.1, 1.0)
-	style.border_color = card_data.get_element_color() if not in_deck else Color(0.3, 0.5, 0.3, 1.0)
-	style.border_width_left = 2
-	style.border_width_top = 2
-	style.border_width_right = 2
-	style.border_width_bottom = 2
-	style.corner_radius_top_left = 4
-	style.corner_radius_top_right = 4
-	style.corner_radius_bottom_left = 4
-	style.corner_radius_bottom_right = 4
-	card_display.add_theme_stylebox_override("normal", style)
-	card_display.add_theme_stylebox_override("hover", style)
-	card_display.add_theme_stylebox_override("pressed", style)
+	# Create SubViewportContainer to properly render the Node2D Card scene
+	var viewport_container = SubViewportContainer.new()
+	viewport_container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	viewport_container.stretch = true
+	viewport_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	card_button.add_child(viewport_container)
 	
-	# Content container
-	var vbox = VBoxContainer.new()
-	vbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	vbox.add_theme_constant_override("separation", 2)
-	card_display.add_child(vbox)
+	# Create SubViewport for the 2D card
+	var viewport = SubViewport.new()
+	viewport.size = Vector2i(148, 209)
+	viewport.transparent_bg = true
+	viewport_container.add_child(viewport)
 	
-	# Card name
-	var name_label = Label.new()
-	name_label.text = card_data.card_name
-	name_label.add_theme_font_size_override("font_size", 10)
-	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD
-	vbox.add_child(name_label)
+	# Instantiate the Card scene
+	var card_instance = CARD_SCENE.instantiate()
+	card_instance.set_card_data(card_data)
+	card_instance.position = Vector2(74, 104.5)  # Center of viewport
+	# Make sure card labels are visible
+	_make_card_labels_visible(card_instance)
+	viewport.add_child(card_instance)
 	
-	# Element symbol
-	var element_label = Label.new()
-	element_label.text = _get_element_symbol(card_data.element)
-	element_label.add_theme_font_size_override("font_size", 24)
-	element_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	element_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	vbox.add_child(element_label)
-	
-	# Stats
-	var stats_label = Label.new()
-	var stats = []
-	if card_data.get_total_damage() > 0:
-		stats.append(str(card_data.get_total_damage()) + " DMG")
-	if card_data.get_total_block() > 0:
-		stats.append(str(card_data.get_total_block()) + " BLK")
-	if card_data.get_total_heal() > 0:
-		stats.append("+" + str(card_data.get_total_heal()) + " HP")
-	stats_label.text = " ".join(stats) if stats.size() > 0 else ""
-	stats_label.add_theme_font_size_override("font_size", 9)
-	stats_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vbox.add_child(stats_label)
-	
-	# In deck indicator
+	# Add visual indicator if in deck (on top of button)
 	if in_deck:
+		var overlay = ColorRect.new()
+		overlay.color = Color(0.2, 0.4, 0.2, 0.3)
+		overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		card_button.add_child(overlay)
+		
 		var indicator = Label.new()
 		indicator.text = "IN DECK"
-		indicator.add_theme_font_size_override("font_size", 8)
-		indicator.add_theme_color_override("font_color", Color(0.4, 0.7, 0.4, 1))
-		indicator.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		vbox.add_child(indicator)
+		indicator.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+		indicator.offset_left = 5
+		indicator.offset_top = 5
+		indicator.offset_right = 80
+		indicator.offset_bottom = 20
+		indicator.add_theme_font_size_override("font_size", 10)
+		indicator.add_theme_color_override("font_color", Color(0.4, 0.8, 0.4, 1))
+		indicator.add_theme_color_override("font_outline_color", Color.BLACK)
+		indicator.add_theme_constant_override("outline_size", 2)
+		indicator.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		card_button.add_child(indicator)
 	
 	# Connect click to add to deck
-	card_display.pressed.connect(_on_collection_card_clicked.bind(index))
+	card_button.pressed.connect(_on_collection_card_clicked.bind(index))
 	
-	return card_display
+	return card_button
+
+func _make_card_labels_visible(card_node: Node):
+	# Find all labels and make them visible
+	var labels = [
+		"CardNumberLabel",
+		"CardNameLabel",
+		"ElementSymbolLabel",
+		"DescriptionLabel",
+		"DamageLabel",
+		"HealLabel",
+		"BlockLabel",
+		"DrawLabel",
+		"SpecialLabel"
+	]
+	
+	for label_name in labels:
+		var label = card_node.get_node_or_null(label_name)
+		if label:
+			label.modulate = Color(1, 1, 1, 1)
+			label.visible = true
 
 func _create_deck_card_display(card_dict: Dictionary, indices: Array, count: int) -> Control:
 	var card_data = CardData.from_save_dict(card_dict)
 	
-	var card_display = Button.new()
-	card_display.custom_minimum_size = Vector2(100, 120)
+	# Create a button wrapper for clickability
+	var card_button = Button.new()
+	card_button.custom_minimum_size = Vector2(148, 209)
+	card_button.text = ""
+	card_button.flat = true
 	
-	var style = StyleBoxFlat.new()
-	style.bg_color = Color(0.2, 0.2, 0.25, 1.0)
-	style.border_color = card_data.get_element_color()
-	style.border_width_left = 2
-	style.border_width_top = 2
-	style.border_width_right = 2
-	style.border_width_bottom = 2
-	style.corner_radius_top_left = 4
-	style.corner_radius_top_right = 4
-	style.corner_radius_bottom_left = 4
-	style.corner_radius_bottom_right = 4
-	card_display.add_theme_stylebox_override("normal", style)
-	card_display.add_theme_stylebox_override("hover", style)
-	card_display.add_theme_stylebox_override("pressed", style)
+	# Create SubViewportContainer to properly render the Node2D Card scene
+	var viewport_container = SubViewportContainer.new()
+	viewport_container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	viewport_container.stretch = true
+	viewport_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	card_button.add_child(viewport_container)
 	
-	var vbox = VBoxContainer.new()
-	vbox.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	vbox.add_theme_constant_override("separation", 2)
-	card_display.add_child(vbox)
+	# Create SubViewport for the 2D card
+	var viewport = SubViewport.new()
+	viewport.size = Vector2i(148, 209)
+	viewport.transparent_bg = true
+	viewport_container.add_child(viewport)
 	
-	# Card name with count
-	var name_label = Label.new()
-	name_label.text = card_data.card_name
-	name_label.add_theme_font_size_override("font_size", 10)
-	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD
-	vbox.add_child(name_label)
+	# Instantiate the Card scene
+	var card_instance = CARD_SCENE.instantiate()
+	card_instance.set_card_data(card_data)
+	card_instance.position = Vector2(74, 104.5)  # Center of viewport
+	# Make sure card labels are visible
+	_make_card_labels_visible(card_instance)
+	viewport.add_child(card_instance)
 	
-	# Count badge
-	var count_label = Label.new()
-	count_label.text = "x%d" % count
-	count_label.add_theme_font_size_override("font_size", 16)
-	count_label.add_theme_color_override("font_color", Color(1, 0.9, 0.5, 1))
-	count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	count_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	vbox.add_child(count_label)
-	
-	# Element
-	var element_label = Label.new()
-	element_label.text = _get_element_symbol(card_data.element)
-	element_label.add_theme_font_size_override("font_size", 18)
-	element_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vbox.add_child(element_label)
+	# Add count badge overlay (on top of button)
+	var count_badge = Label.new()
+	count_badge.text = "x%d" % count
+	count_badge.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+	count_badge.offset_left = -40
+	count_badge.offset_top = 5
+	count_badge.offset_right = -5
+	count_badge.offset_bottom = 25
+	count_badge.add_theme_font_size_override("font_size", 18)
+	count_badge.add_theme_color_override("font_color", Color(1, 0.9, 0.5, 1))
+	count_badge.add_theme_color_override("font_outline_color", Color.BLACK)
+	count_badge.add_theme_constant_override("outline_size", 2)
+	count_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	card_button.add_child(count_badge)
 	
 	# Click to remove one copy
-	card_display.pressed.connect(_on_deck_card_clicked.bind(indices[0]))
+	card_button.pressed.connect(_on_deck_card_clicked.bind(indices[0]))
 	
-	return card_display
+	return card_button
 
 func _on_collection_card_clicked(index: int):
 	if deck_card_indices.size() >= MAX_DECK_SIZE:
@@ -448,16 +447,3 @@ func _close():
 	visible = false
 	emit_signal("editor_closed")
 
-func _get_element_symbol(element_type: CardData.ElementType) -> String:
-	match element_type:
-		CardData.ElementType.SULFUR:
-			return "🔥"
-		CardData.ElementType.MERCURY:
-			return "💧"
-		CardData.ElementType.SALT:
-			return "⛰️"
-		CardData.ElementType.VITAE:
-			return "🌿"
-		CardData.ElementType.AETHER:
-			return "⭐"
-	return "?"

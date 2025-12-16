@@ -127,7 +127,7 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_constants/h_separation = 8
 theme_override_constants/v_separation = 8
-columns = 8
+columns = 4
 
 [node name="DeckPanel" type="PanelContainer" parent="PanelContainer/VBoxContainer/ContentHBox"]
 layout_mode = 2
@@ -163,7 +163,7 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_constants/h_separation = 8
 theme_override_constants/v_separation = 8
-columns = 5
+columns = 3
 
 [node name="Footer" type="HBoxContainer" parent="PanelContainer/VBoxContainer"]
 layout_mode = 2

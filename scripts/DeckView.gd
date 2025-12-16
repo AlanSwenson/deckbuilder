@@ -1,5 +1,7 @@
 extends CanvasLayer
 
+const CARD_SCENE = preload("res://scenes/Card.tscn")
+
 @onready var close_button = $CenterContainer/VBoxContainer/Button
 @onready var grid_container = $CenterContainer/VBoxContainer/ScrollContainer/GridContainer
 
@@ -150,48 +152,6 @@ func display_deck_cards():
 		if not card_data:
 			continue
 		
-		# Create a simple Control-based card display for the grid
-		var card_display = Control.new()
-		card_display.custom_minimum_size = Vector2(89, 125)  # Scaled card size
-		card_display.name = "CardDisplay_" + str(i)
-		
-		# Create a background panel with element color tint
-		var panel = Panel.new()
-		panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-		var style_box = StyleBoxFlat.new()
-		style_box.bg_color = Color(0.2, 0.2, 0.2, 1.0)  # Dark background
-		style_box.border_color = card_data.get_element_color()
-		style_box.border_width_left = 2
-		style_box.border_width_top = 2
-		style_box.border_width_right = 2
-		style_box.border_width_bottom = 2
-		panel.add_theme_stylebox_override("panel", style_box)
-		card_display.add_child(panel)
-		
-		# Add card name label
-		var name_label = Label.new()
-		name_label.text = card_data.card_name
-		name_label.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
-		name_label.offset_top = 5
-		name_label.offset_bottom = 30
-		name_label.add_theme_font_size_override("font_size", 12)
-		name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		name_label.add_theme_color_override("font_color", Color.WHITE)
-		name_label.add_theme_color_override("font_outline_color", Color.BLACK)
-		name_label.add_theme_constant_override("outline_size", 2)
-		card_display.add_child(name_label)
-		
-		# Add element info at bottom
-		var element_label = Label.new()
-		element_label.text = card_data.get_element_name()
-		element_label.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
-		element_label.offset_top = -20
-		element_label.add_theme_font_size_override("font_size", 10)
-		element_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		element_label.add_theme_color_override("font_color", card_data.get_element_color())
-		card_display.add_child(element_label)
-		
 		# Check card status - priority: Hand > In Play > Discard > Nothing (in deck)
 		var card_name = card_data.card_name
 		var is_in_hand = false
@@ -219,56 +179,8 @@ func display_deck_cards():
 				is_in_discard = true
 				marked_discard_counts[card_name] = already_marked + 1
 		
-		# Show only ONE indicator based on priority
-		if is_in_hand:
-			# Add hand icon indicator (top-left)
-			var hand_icon = Label.new()
-			hand_icon.text = "✋"  # Hand emoji
-			hand_icon.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
-			hand_icon.offset_left = 5
-			hand_icon.offset_top = 5
-			hand_icon.offset_right = 25
-			hand_icon.offset_bottom = 25
-			hand_icon.add_theme_font_size_override("font_size", 16)
-			hand_icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			hand_icon.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-			hand_icon.add_theme_color_override("font_color", Color.YELLOW)
-			hand_icon.add_theme_color_override("font_outline_color", Color.BLACK)
-			hand_icon.add_theme_constant_override("outline_size", 2)
-			card_display.add_child(hand_icon)
-		elif is_in_play:
-			# Add checkmark icon indicator (top-left) - card is in play (in a slot)
-			var checkmark_icon = Label.new()
-			checkmark_icon.text = "✓"  # Checkmark symbol
-			checkmark_icon.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
-			checkmark_icon.offset_left = 5
-			checkmark_icon.offset_top = 5
-			checkmark_icon.offset_right = 25
-			checkmark_icon.offset_bottom = 25
-			checkmark_icon.add_theme_font_size_override("font_size", 18)
-			checkmark_icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			checkmark_icon.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-			checkmark_icon.add_theme_color_override("font_color", Color.GREEN)
-			checkmark_icon.add_theme_color_override("font_outline_color", Color.BLACK)
-			checkmark_icon.add_theme_constant_override("outline_size", 2)
-			card_display.add_child(checkmark_icon)
-		elif is_in_discard:
-			# Add X icon indicator (top-right) - only if NOT in hand and NOT in play
-			var discard_icon = Label.new()
-			discard_icon.text = "✕"  # X symbol
-			discard_icon.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
-			discard_icon.offset_left = -25
-			discard_icon.offset_top = 5
-			discard_icon.offset_right = -5
-			discard_icon.offset_bottom = 25
-			discard_icon.add_theme_font_size_override("font_size", 18)
-			discard_icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-			discard_icon.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-			discard_icon.add_theme_color_override("font_color", Color.RED)
-			discard_icon.add_theme_color_override("font_outline_color", Color.WHITE)
-			discard_icon.add_theme_constant_override("outline_size", 2)
-			card_display.add_child(discard_icon)
-		# If none of the above, card is still in deck - show nothing
+		# Create card display using Card scene
+		var card_display = _create_card_display(card_data, i, is_in_hand, is_in_play, is_in_discard)
 		
 		# Store card data reference
 		card_display.set_meta("card_data", card_data)
@@ -284,6 +196,110 @@ func display_deck_cards():
 		elif is_in_discard:
 			status = "in discard"
 		print("[DeckView] Added card: ", card_data.card_name, " at index ", i, " (", status, ")")
+
+func _create_card_display(card_data: CardData, index: int, is_in_hand: bool, is_in_play: bool, is_in_discard: bool) -> Control:
+	# Create a Control container to hold the card and status indicators
+	var card_container = Control.new()
+	card_container.custom_minimum_size = Vector2(148, 209)  # Card scene size
+	card_container.name = "CardDisplay_" + str(index)
+	card_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	
+	# Create SubViewportContainer to properly render the Node2D Card scene
+	var viewport_container = SubViewportContainer.new()
+	viewport_container.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	viewport_container.stretch = true
+	viewport_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	card_container.add_child(viewport_container)
+	
+	# Create SubViewport for the 2D card
+	var viewport = SubViewport.new()
+	viewport.size = Vector2i(148, 209)
+	viewport.transparent_bg = true
+	viewport_container.add_child(viewport)
+	
+	# Instantiate the Card scene
+	var card_instance = CARD_SCENE.instantiate()
+	card_instance.set_card_data(card_data)
+	card_instance.position = Vector2(74, 104.5)  # Center of viewport
+	# Make sure card labels are visible
+	_make_card_labels_visible(card_instance)
+	viewport.add_child(card_instance)
+	
+	# Add status indicators on top
+	if is_in_hand:
+		# Add hand icon indicator (top-left)
+		var hand_icon = Label.new()
+		hand_icon.text = "✋"  # Hand emoji
+		hand_icon.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+		hand_icon.offset_left = 5
+		hand_icon.offset_top = 5
+		hand_icon.offset_right = 30
+		hand_icon.offset_bottom = 30
+		hand_icon.add_theme_font_size_override("font_size", 20)
+		hand_icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		hand_icon.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		hand_icon.add_theme_color_override("font_color", Color.YELLOW)
+		hand_icon.add_theme_color_override("font_outline_color", Color.BLACK)
+		hand_icon.add_theme_constant_override("outline_size", 2)
+		hand_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		card_container.add_child(hand_icon)
+	elif is_in_play:
+		# Add checkmark icon indicator (top-left) - card is in play (in a slot)
+		var checkmark_icon = Label.new()
+		checkmark_icon.text = "✓"  # Checkmark symbol
+		checkmark_icon.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
+		checkmark_icon.offset_left = 5
+		checkmark_icon.offset_top = 5
+		checkmark_icon.offset_right = 30
+		checkmark_icon.offset_bottom = 30
+		checkmark_icon.add_theme_font_size_override("font_size", 22)
+		checkmark_icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		checkmark_icon.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		checkmark_icon.add_theme_color_override("font_color", Color.GREEN)
+		checkmark_icon.add_theme_color_override("font_outline_color", Color.BLACK)
+		checkmark_icon.add_theme_constant_override("outline_size", 2)
+		checkmark_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		card_container.add_child(checkmark_icon)
+	elif is_in_discard:
+		# Add X icon indicator (top-right) - only if NOT in hand and NOT in play
+		var discard_icon = Label.new()
+		discard_icon.text = "✕"  # X symbol
+		discard_icon.set_anchors_and_offsets_preset(Control.PRESET_TOP_RIGHT)
+		discard_icon.offset_left = -30
+		discard_icon.offset_top = 5
+		discard_icon.offset_right = -5
+		discard_icon.offset_bottom = 30
+		discard_icon.add_theme_font_size_override("font_size", 22)
+		discard_icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		discard_icon.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		discard_icon.add_theme_color_override("font_color", Color.RED)
+		discard_icon.add_theme_color_override("font_outline_color", Color.WHITE)
+		discard_icon.add_theme_constant_override("outline_size", 2)
+		discard_icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		card_container.add_child(discard_icon)
+	# If none of the above, card is still in deck - show nothing
+	
+	return card_container
+
+func _make_card_labels_visible(card_node: Node):
+	# Find all labels and make them visible
+	var labels = [
+		"CardNumberLabel",
+		"CardNameLabel",
+		"ElementSymbolLabel",
+		"DescriptionLabel",
+		"DamageLabel",
+		"HealLabel",
+		"BlockLabel",
+		"DrawLabel",
+		"SpecialLabel"
+	]
+	
+	for label_name in labels:
+		var label = card_node.get_node_or_null(label_name)
+		if label:
+			label.modulate = Color(1, 1, 1, 1)
+			label.visible = true
 
 func clear_displayed_cards():
 	# Clear all children from grid container

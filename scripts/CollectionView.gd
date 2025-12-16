@@ -91,8 +91,9 @@ func _get_filtered_cards() -> Array[CardData]:
 			filtered.append(card)
 		elif current_filter == FilterElement.SULFUR and card.element == CardData.ElementType.SULFUR:
 			filtered.append(card)
-		elif current_filter == FilterElement.MERCURY and card.element == CardData.ElementType.MERCURY:
-			filtered.append(card)
+		elif current_filter == FilterElement.MERCURY:
+			if card.element == CardData.ElementType.MERCURY:
+				filtered.append(card)
 		elif current_filter == FilterElement.SALT and card.element == CardData.ElementType.SALT:
 			filtered.append(card)
 		elif current_filter == FilterElement.VITAE and card.element == CardData.ElementType.VITAE:
@@ -123,6 +124,8 @@ func _sort_cards(cards: Array[CardData]) -> Array[CardData]:
 	
 	return sorted
 
+const CARD_SCENE = preload("res://scenes/Card.tscn")
+
 func _display_cards():
 	# Clear existing cards
 	for child in grid_container.get_children():
@@ -137,127 +140,47 @@ func _display_cards():
 		grid_container.add_child(card_display)
 
 func _create_card_display(card_data: CardData, index: int) -> Control:
-	var card_display = Control.new()
-	card_display.custom_minimum_size = Vector2(120, 170)
-	card_display.name = "CardDisplay_" + str(index)
+	# Create a SubViewportContainer to properly render the Node2D Card scene
+	var viewport_container = SubViewportContainer.new()
+	viewport_container.custom_minimum_size = Vector2(148, 209)  # Card scene size
+	viewport_container.name = "CardDisplay_" + str(index)
+	viewport_container.stretch = true
 	
-	# Create a background panel with element color border
-	var panel = Panel.new()
-	panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	var style_box = StyleBoxFlat.new()
-	style_box.bg_color = Color(0.15, 0.15, 0.18, 1.0)
-	style_box.border_color = card_data.get_element_color()
-	style_box.border_width_left = 3
-	style_box.border_width_top = 3
-	style_box.border_width_right = 3
-	style_box.border_width_bottom = 3
-	style_box.corner_radius_top_left = 5
-	style_box.corner_radius_top_right = 5
-	style_box.corner_radius_bottom_left = 5
-	style_box.corner_radius_bottom_right = 5
-	panel.add_theme_stylebox_override("panel", style_box)
-	card_display.add_child(panel)
+	# Create SubViewport for the 2D card
+	var viewport = SubViewport.new()
+	viewport.size = Vector2i(148, 209)
+	viewport.transparent_bg = true
+	viewport_container.add_child(viewport)
 	
-	# Rarity indicator bar at top
-	var rarity_bar = ColorRect.new()
-	rarity_bar.color = card_data.get_rarity_color()
-	rarity_bar.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
-	rarity_bar.offset_top = 3
-	rarity_bar.offset_bottom = 8
-	rarity_bar.offset_left = 3
-	rarity_bar.offset_right = -3
-	card_display.add_child(rarity_bar)
+	# Instantiate the Card scene
+	var card_instance = CARD_SCENE.instantiate()
+	card_instance.set_card_data(card_data)
+	card_instance.position = Vector2(74, 104.5)  # Center of viewport
+	# Make sure card labels are visible (they start with alpha 0)
+	_make_card_labels_visible(card_instance)
+	viewport.add_child(card_instance)
 	
-	# Card name label
-	var name_label = Label.new()
-	name_label.text = card_data.card_name
-	name_label.set_anchors_and_offsets_preset(Control.PRESET_TOP_WIDE)
-	name_label.offset_top = 12
-	name_label.offset_bottom = 40
-	name_label.offset_left = 5
-	name_label.offset_right = -5
-	name_label.add_theme_font_size_override("font_size", 12)
-	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	name_label.add_theme_color_override("font_color", Color.WHITE)
-	name_label.autowrap_mode = TextServer.AUTOWRAP_WORD
-	card_display.add_child(name_label)
-	
-	# Element symbol
-	var element_label = Label.new()
-	element_label.text = _get_element_symbol(card_data.element)
-	element_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
-	element_label.offset_top = -30
-	element_label.offset_bottom = 10
-	element_label.add_theme_font_size_override("font_size", 32)
-	element_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	element_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	card_display.add_child(element_label)
-	
-	# Stats container at bottom
-	var stats_container = HBoxContainer.new()
-	stats_container.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
-	stats_container.offset_top = -55
-	stats_container.offset_bottom = -30
-	stats_container.offset_left = 5
-	stats_container.offset_right = -5
-	stats_container.alignment = BoxContainer.ALIGNMENT_CENTER
-	card_display.add_child(stats_container)
-	
-	# Add stat labels
-	var damage = card_data.get_total_damage()
-	var heal = card_data.get_total_heal()
-	var block = card_data.get_total_block()
-	
-	if damage > 0:
-		var dmg_label = Label.new()
-		dmg_label.text = str(damage)
-		dmg_label.add_theme_font_size_override("font_size", 14)
-		dmg_label.add_theme_color_override("font_color", Color(1, 0.3, 0.3, 1))
-		stats_container.add_child(dmg_label)
-	
-	if block > 0:
-		var block_label = Label.new()
-		block_label.text = str(block)
-		block_label.add_theme_font_size_override("font_size", 14)
-		block_label.add_theme_color_override("font_color", Color(0.3, 0.5, 1, 1))
-		stats_container.add_child(block_label)
-	
-	if heal > 0:
-		var heal_label = Label.new()
-		heal_label.text = "+" + str(heal)
-		heal_label.add_theme_font_size_override("font_size", 14)
-		heal_label.add_theme_color_override("font_color", Color(0.3, 1, 0.3, 1))
-		stats_container.add_child(heal_label)
-	
-	# Element and rarity text at bottom
-	var info_label = Label.new()
-	info_label.text = "%s • %s" % [card_data.get_element_name(), card_data.get_rarity_name()]
-	info_label.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_WIDE)
-	info_label.offset_top = -25
-	info_label.offset_bottom = -5
-	info_label.offset_left = 5
-	info_label.offset_right = -5
-	info_label.add_theme_font_size_override("font_size", 10)
-	info_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	info_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7, 1))
-	card_display.add_child(info_label)
-	
-	return card_display
+	return viewport_container
 
-func _get_element_symbol(element_type: CardData.ElementType) -> String:
-	match element_type:
-		CardData.ElementType.SULFUR:
-			return "🔥"
-		CardData.ElementType.MERCURY:
-			return "💧"
-		CardData.ElementType.SALT:
-			return "⛰️"
-		CardData.ElementType.VITAE:
-			return "🌿"
-		CardData.ElementType.AETHER:
-			return "⭐"
-	return "?"
+func _make_card_labels_visible(card_node: Node):
+	# Find all labels and make them visible
+	var labels = [
+		"CardNumberLabel",
+		"CardNameLabel",
+		"ElementSymbolLabel",
+		"DescriptionLabel",
+		"DamageLabel",
+		"HealLabel",
+		"BlockLabel",
+		"DrawLabel",
+		"SpecialLabel"
+	]
+	
+	for label_name in labels:
+		var label = card_node.get_node_or_null(label_name)
+		if label:
+			label.modulate = Color(1, 1, 1, 1)
+			label.visible = true
 
 func _update_summary():
 	if not SaveManager or not SaveManager.current_save_data:
@@ -267,7 +190,9 @@ func _update_summary():
 	var summary = SaveManager.current_save_data.get_collection_summary()
 	var filtered_count = _get_filtered_cards().size()
 	
-	summary_label.text = "Showing %d cards | Total: %d | Common: %d | Uncommon: %d | Rare: %d | Epic: %d | Legendary: %d" % [
+	var text = "Showing %d cards | Total: %d | Common: %d | Uncommon: %d"
+	text += " | Rare: %d | Epic: %d | Legendary: %d"
+	summary_label.text = text % [
 		filtered_count,
 		summary["total"],
 		summary["common"],
