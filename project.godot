@@ -25,3 +25,10 @@ CardRegistry="*res://scripts/card_registry.gd"
 
 window/size/viewport_width=1600
 window/size/viewport_height=1000
+window/size/mode=2
+window/stretch/mode="viewport"
+window/stretch/aspect="expand"
+
+[rendering]
+
+textures/canvas_textures/default_texture_filter=0

@@ -1,21 +1,30 @@
-[gd_scene load_steps=15 format=3 uid="uid://chixb0wso8nu8"]
+[gd_scene load_steps=18 format=3 uid="uid://chixb0wso8nu8"]
 
-[ext_resource type="Script" uid="uid://dd36et36c40tt" path="res://scripts/CardManager.gd" id="1_0xm2m"]
-[ext_resource type="PackedScene" path="res://scenes/DiscardSlotEnemy.tscn" id="1_4c57u"]
+[ext_resource type="Script" uid="uid://fqnicuhsiixx" path="res://scripts/CardManager.gd" id="1_0xm2m"]
+[ext_resource type="PackedScene" uid="uid://dxhb33qqyqu6e" path="res://scenes/DiscardSlotEnemy.tscn" id="1_4c57u"]
+[ext_resource type="Texture2D" uid="uid://clni7t1nentq" path="res://assets/art/backgrounds/TestBackground.png" id="1_background"]
+[ext_resource type="Script" uid="uid://dxgpsl28bfrli" path="res://scripts/BackgroundScaler.gd" id="1_bgscaler"]
+[ext_resource type="Script" path="res://scripts/RightSideUIPositioner.gd" id="1_uipos"]
 [ext_resource type="PackedScene" uid="uid://b8k3jhsqrbd3k" path="res://scenes/DeckSlotEnemy.tscn" id="1_efxa6"]
-[ext_resource type="Script" uid="uid://dxis0rv5o2s1m" path="res://scripts/PlayerHand.gd" id="4_1bvp3"]
-[ext_resource type="Script" uid="uid://b8k3jhsqrbd3e" path="res://scripts/EnemyHand.gd" id="4_enemyhand"]
+[ext_resource type="Script" uid="uid://c4soc5y2d1gor" path="res://scripts/PlayerHand.gd" id="4_1bvp3"]
+[ext_resource type="Script" uid="uid://qd47xbp8afrp" path="res://scripts/EnemyHand.gd" id="4_enemyhand"]
 [ext_resource type="PackedScene" uid="uid://bc30jhsqrbd3k" path="res://scenes/DeckSlotPlayer.tscn" id="5_5vw27"]
-[ext_resource type="Script" uid="uid://dbyi7va0e1pvi" path="res://scripts/InputManager.gd" id="6_272bh"]
+[ext_resource type="Script" uid="uid://dk7tvi3rjxdqw" path="res://scripts/InputManager.gd" id="6_272bh"]
 [ext_resource type="PackedScene" uid="uid://beobyodqvdcrg" path="res://scenes/DeckView.tscn" id="7_272bh"]
-[ext_resource type="Script" uid="uid://dk3bpo05ob7v7" path="res://scripts/PlayerDeck.gd" id="7_playerdeck"]
-[ext_resource type="Script" uid="uid://xn1puuxp05qt" path="res://scripts/EnemyDeck.gd" id="8_enemydeck"]
+[ext_resource type="Script" uid="uid://c3o75f7d402w8" path="res://scripts/PlayerDeck.gd" id="7_playerdeck"]
+[ext_resource type="Script" uid="uid://nbt330y7nasy" path="res://scripts/EnemyDeck.gd" id="8_enemydeck"]
 [ext_resource type="PackedScene" uid="uid://dxhb33qqyqu6b" path="res://scenes/DiscardSlotPlayer.tscn" id="9_kek77"]
-[ext_resource type="Script" uid="uid://l8ok37c4rqtd" path="res://scripts/TurnLogic.gd" id="9_turnlogic"]
-[ext_resource type="Script" uid="uid://bahauubof6s36" path="res://scripts/GameState.gd" id="10_gamestate"]
+[ext_resource type="Script" uid="uid://cxe2a4nswm1hn" path="res://scripts/TurnLogic.gd" id="9_turnlogic"]
+[ext_resource type="Script" uid="uid://cobkgm8ntppsi" path="res://scripts/GameState.gd" id="10_gamestate"]
 [ext_resource type="PackedScene" uid="uid://bn1mu44ggwypr" path="res://scenes/turn_history.tscn" id="14_w48qg"]
 
 [node name="Main" type="Node2D"]
+script = ExtResource("1_uipos")
+
+[node name="Background" type="Sprite2D" parent="."]
+z_index = -100
+texture = ExtResource("1_background")
+script = ExtResource("1_bgscaler")
 
 [node name="GameState" type="Node2D" parent="."]
 script = ExtResource("10_gamestate")
@@ -40,7 +49,6 @@ position = Vector2(84, 888)
 
 [node name="DiscardSlotPlayer" parent="." instance=ExtResource("9_kek77")]
 position = Vector2(84, 668)
-script = null
 
 [node name="EnemyDeck" type="Node2D" parent="."]
 script = ExtResource("8_enemydeck")
@@ -53,7 +61,6 @@ position = Vector2(1514, 113)
 
 [node name="DiscardSlotEnemy" parent="." instance=ExtResource("1_4c57u")]
 position = Vector2(1513, 335)
-script = null
 
 [node name="DeckView" parent="." instance=ExtResource("7_272bh")]
 visible = false

@@ -223,4 +223,3 @@ func show_game_over(message: String, color: Color) -> void:
 # Check if game is still playing
 func is_game_playing() -> bool:
 	return game_status == GameStatus.PLAYING
-

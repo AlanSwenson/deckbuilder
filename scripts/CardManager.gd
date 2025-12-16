@@ -43,10 +43,28 @@ func _ready() -> void:
 	view_deck_button.pressed.connect(_on_view_deck_pressed)
 
 func _on_view_deck_pressed():
-	if deck_view and is_instance_valid(deck_view) and deck_view.has_method("open"):
+	print("[CardManager] ViewDeckButton pressed")
+	if not deck_view:
+		print("[CardManager] ERROR: deck_view is null")
+		return
+	if not is_instance_valid(deck_view):
+		print("[CardManager] ERROR: deck_view is not valid")
+		return
+	
+	# Debug: Print information about deck_view
+	print("[CardManager] deck_view type: ", deck_view.get_class())
+	print("[CardManager] deck_view script: ", deck_view.get_script())
+	
+	# Try calling open() directly - has_method() might not work correctly with scene instances
+	# Use call() as a fallback if direct call doesn't work
+	if deck_view.has_method("open"):
+		print("[CardManager] Calling deck_view.open() via has_method check")
 		deck_view.open()
 	else:
-		print("[CardManager] ERROR: deck_view is not valid or doesn't have open() method")
+		# Fallback: use call() which works even if has_method() returns false
+		print("[CardManager] has_method() returned false, using call() instead")
+		deck_view.call("open")
+		print("[CardManager] Called open() via call()")
 # Public function to register a card (can be called from other scripts)
 func register_card(card: Node2D) -> void:
 	_connect_card(card)

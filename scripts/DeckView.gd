@@ -7,6 +7,7 @@ var player_deck: Node2D = null
 var player_hand: Node2D = null
 
 func _ready():
+	print("[DeckView] _ready() called")
 	# Connect the close button
 	close_button.pressed.connect(_on_close_pressed)
 	
@@ -19,14 +20,30 @@ func _ready():
 	if not player_hand:
 		print("[DeckView] WARNING: PlayerHand not found")
 	
-	# Start hidden
+	# Start hidden - hide the CanvasLayer and all children
+	visible = false
 	hide()
+	# Also explicitly hide all children to ensure they're not visible
+	for child in get_children():
+		if child.has_method("hide"):
+			child.hide()
+		child.visible = false
+	print("[DeckView] Initialized and hidden")
 
 func open():
+	print("[DeckView] Opening deck view...")
+	visible = true
 	show()
+	# Ensure all children are visible
+	for child in get_children():
+		if child.has_method("show"):
+			child.show()
+		child.visible = true
+	print("[DeckView] Visible set to: ", visible, ", children count: ", get_children().size())
 	display_deck_cards()
 	# Reset any hover effects on cards in the main scene
 	_reset_main_scene_hovers()
+	print("[DeckView] Deck view opened")
 
 func close():
 	hide()

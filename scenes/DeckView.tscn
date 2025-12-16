@@ -1,8 +1,9 @@
 [gd_scene load_steps=2 format=3 uid="uid://beobyodqvdcrg"]
 
-[ext_resource type="Script" uid="uid://cjuso7ipl3s2o" path="res://scripts/DeckView.gd" id="1_2lpwi"]
+[ext_resource type="Script" uid="uid://cyi7uay4vkoyh" path="res://scripts/DeckView.gd" id="1_2lpwi"]
 
 [node name="DeckView" type="CanvasLayer"]
+layer = 10
 script = ExtResource("1_2lpwi")
 
 [node name="ColorRect" type="ColorRect" parent="."]
