@@ -1,12 +1,19 @@
 extends Control
 
-@onready var history_label: RichTextLabel = $HistoryLabel
+@onready var history_label: RichTextLabel = $VBoxContainer/HistoryLabel
+@onready var close_button: Button = $VBoxContainer/CloseButton
 
 var history_lines: Array[String] = []
 
 func _ready():
 	# Start with a header
 	add_line("=== Turn History ===", Color.WHITE)
+	
+	# Connect close button
+	close_button.pressed.connect(_on_close_pressed)
+
+func _on_close_pressed():
+	hide()
 
 func add_line(text: String, _color: Color = Color.WHITE):
 	history_lines.append(text)
