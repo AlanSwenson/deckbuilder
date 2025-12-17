@@ -1,9 +1,10 @@
-[gd_scene load_steps=2 format=3 uid="uid://bsbe7k15xy8rq"]
+[gd_scene load_steps=2 format=3 uid="uid://cyf481d5b2mti"]
 
-[ext_resource type="Script" path="res://scripts/CollectionView.gd" id="1_coll"]
+[ext_resource type="Script" uid="uid://c5esihdc08k5u" path="res://scripts/CollectionView.gd" id="1_coll"]
 
 [node name="CollectionView" type="Control"]
-layout_mode = 2
+layout_mode = 3
+anchors_preset = 0
 size_flags_horizontal = 3
 size_flags_vertical = 3
 script = ExtResource("1_coll")
@@ -104,6 +105,7 @@ theme_override_constants/v_separation = 15
 columns = 6
 
 [node name="SummaryLabel" type="Label" parent="VBoxContainer"]
+texture_filter = 1
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "Showing 56 cards | Total: 56 | Common: 40 | Uncommon: 10 | Rare: 4 | Epic: 2 | Legendary: 0"

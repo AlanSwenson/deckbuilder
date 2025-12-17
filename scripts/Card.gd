@@ -44,6 +44,8 @@ func _create_drop_shadow() -> void:
 	var shadow_texture = _get_shadow_texture()
 	if shadow_texture:
 		shadow_sprite.texture = shadow_texture
+		# Use nearest-neighbor filtering for pixel-perfect rendering
+		shadow_sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 
 func _on_mouse_entered() -> void:
 	is_hovered = true

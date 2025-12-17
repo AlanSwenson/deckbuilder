@@ -1,8 +1,10 @@
-[gd_scene load_steps=8 format=3 uid="uid://b8bgpp1c4vvpj"]
+[gd_scene load_steps=10 format=3 uid="uid://b8bgpp1c4vvpj"]
 
 [ext_resource type="Script" uid="uid://c2ex7y0ya7sm3" path="res://scripts/Card.gd" id="1_tgmmg"]
 [ext_resource type="Texture2D" uid="uid://bagx7xvwq10t4" path="res://assets/art/cards/CardBack.png" id="2_4dx8l"]
 [ext_resource type="Texture2D" uid="uid://ec44g8vdaw3t" path="res://assets/art/cards/CardFront.png" id="3_4dx8l"]
+[ext_resource type="FontFile" uid="uid://bfieneugqxemy" path="res://assets/fonts/LoRes 22 OT Bold Oakland.otf" id="4_qf083"]
+[ext_resource type="FontFile" uid="uid://bef7u130koh2t" path="res://assets/fonts/Argent Pixel CF Regular.otf" id="5_40ytf"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_ig7tw"]
 size = Vector2(148, 209)
@@ -366,14 +368,16 @@ vertical_alignment = 1
 
 [node name="CardNameLabel" type="Label" parent="."]
 modulate = Color(1, 1, 1, 0)
+texture_filter = 1
 offset_left = -70.0
 offset_top = -100.0
-offset_right = 70.0
-offset_bottom = -60.0
+offset_right = 210.0
+offset_bottom = -57.0
+scale = Vector2(0.5, 0.5)
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 13
+theme_override_fonts/font = ExtResource("4_qf083")
+theme_override_font_sizes/font_size = 40
 text = "Card Name"
-horizontal_alignment = 1
 
 [node name="ElementSymbolLabel" type="Label" parent="."]
 modulate = Color(1, 1, 1, 0)
@@ -393,12 +397,13 @@ vertical_alignment = 1
 modulate = Color(1, 1, 1, 0)
 offset_left = -65.0
 offset_top = -20.0
-offset_right = 65.0
-offset_bottom = 40.0
+offset_right = 1245.0
+offset_bottom = 620.0
+scale = Vector2(0.1, 0.1)
 theme_override_colors/font_color = Color(1, 1, 1, 1)
-theme_override_font_sizes/font_size = 12
+theme_override_fonts/font = ExtResource("5_40ytf")
+theme_override_font_sizes/font_size = 100
 text = "Description"
-horizontal_alignment = 1
 vertical_alignment = 1
 autowrap_mode = 2
 

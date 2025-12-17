@@ -26,8 +26,9 @@ CardRegistry="*res://scripts/card_registry.gd"
 window/size/viewport_width=1600
 window/size/viewport_height=1000
 window/size/mode=2
-window/stretch/mode="viewport"
-window/stretch/aspect="expand"
+window/stretch/mode="canvas_items"
+window/stretch/scale_mode="integer"
+gui/theme/custom="res://default_theme.tres"
 
 [rendering]
 

@@ -13,7 +13,7 @@ func get_dragged_card() -> Node2D:
 	return dragged_card
 
 # Constants
-const HOVER_SCALE: float = 1.15  # Scale factor when hovering (15% bigger)
+const HOVER_SCALE: float = 1.2  # Scale factor when hovering (15% bigger)
 const HOVER_ANIMATION_DURATION: float = 0.15  # Animation duration in seconds
 const RETURN_ANIMATION_DURATION: float = 0.2  # Animation duration for returning card
 const CARD_WIDTH: float = 148.0  # Card width in pixels
