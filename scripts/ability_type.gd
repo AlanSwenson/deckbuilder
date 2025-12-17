@@ -51,6 +51,20 @@ func roll_value(rarity: int) -> int:
 	var range_for_rarity = value_ranges[rarity]
 	return randi_range(range_for_rarity.x, range_for_rarity.y)
 
+# Get the minimum value for a specific rarity
+func get_minimum_value(rarity: int) -> int:
+	if is_boolean:
+		return 1  # Boolean abilities are always "active" when present
+	
+	# Ensure rarity is within bounds
+	if rarity < 0 or rarity >= value_ranges.size():
+		var msg = "get_minimum_value: Invalid rarity %d for ability %s"
+		push_warning(msg % [rarity, id])
+		rarity = clampi(rarity, 0, value_ranges.size() - 1)
+	
+	var range_for_rarity = value_ranges[rarity]
+	return range_for_rarity.x  # Return the minimum value (x component)
+
 # Generate a description string with the actual value filled in
 func get_description(value: int) -> String:
 	if is_boolean:

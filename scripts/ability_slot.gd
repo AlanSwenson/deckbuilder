@@ -16,6 +16,14 @@ func roll_value(rarity: int) -> void:
 		push_warning("AbilitySlot.roll_value: No ability_type set")
 		rolled_value = 0
 
+# Set the value to minimum based on the card's rarity
+func set_minimum_value(rarity: int) -> void:
+	if ability_type:
+		rolled_value = ability_type.get_minimum_value(rarity)
+	else:
+		push_warning("AbilitySlot.set_minimum_value: No ability_type set")
+		rolled_value = 0
+
 # Get the description for this ability with the rolled value
 func get_description() -> String:
 	if ability_type:

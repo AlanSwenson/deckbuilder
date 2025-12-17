@@ -26,7 +26,8 @@ enum Rarity {
 @export var element: ElementType = ElementType.SULFUR
 @export var rarity: Rarity = Rarity.COMMON
 @export var burnable: bool = true  # Whether this card can be destroyed/removed from collection
-@export var enabled: bool = true  # Whether this card should be loaded into the game (for testing one card at a time)
+# Whether this card should be loaded into the game (for testing one card at a time)
+@export var enabled: bool = true
 
 # Ability slots - each card can have up to 5 abilities
 # Only slots up to get_slot_count() are active based on rarity
@@ -44,6 +45,12 @@ func roll_stats() -> void:
 	var active_slots = get_slot_count()
 	for i in range(mini(active_slots, ability_slots.size())):
 		ability_slots[i].roll_value(rarity)
+
+# Set stats to minimum values for all active ability slots based on rarity
+func set_minimum_stats() -> void:
+	var active_slots = get_slot_count()
+	for i in range(mini(active_slots, ability_slots.size())):
+		ability_slots[i].set_minimum_value(rarity)
 
 # Add an ability to this card by id (convenience method)
 func add_ability(ability_id: String) -> void:

@@ -76,6 +76,34 @@ func create_card(card_name: String, rarity: CardData.Rarity = CardData.Rarity.CO
 	
 	return card
 
+# Create a new instance of a card with minimum values (for starter collection)
+# This duplicates the template and sets stats to minimum values
+func create_card_with_minimum_values(
+	card_name: String, 
+	rarity: CardData.Rarity = CardData.Rarity.COMMON
+) -> CardData:
+	var template = get_card_template(card_name)
+	if not template:
+		return null
+	
+	# Create a new card instance from the template
+	var card = CardData.new()
+	card.card_name = template.card_name
+	card.element = template.element
+	card.rarity = rarity
+	card.card_art = template.card_art
+	
+	# Copy ability slots from template
+	for slot in template.ability_slots:
+		var new_slot = slot.duplicate_slot()
+		card.ability_slots.append(new_slot)
+	
+	# Set stats to minimum values based on the new rarity
+	card.set_minimum_stats()
+	card.description = card.generate_description()
+	
+	return card
+
 # Check if a card exists
 func has_card(card_name: String) -> bool:
 	return card_name in cards
