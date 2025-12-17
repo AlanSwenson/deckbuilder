@@ -32,6 +32,8 @@ func _load_all_cards() -> void:
 			if card:
 				if card.card_name == "":
 					push_warning("CardRegistry: Card in %s has no name set" % file_name)
+				elif not card.enabled:
+					print("[CardRegistry] Skipping disabled card: %s" % card.card_name)
 				else:
 					cards[card.card_name] = card
 					print("[CardRegistry] Loaded card template: %s" % card.card_name)

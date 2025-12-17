@@ -26,6 +26,7 @@ enum Rarity {
 @export var element: ElementType = ElementType.SULFUR
 @export var rarity: Rarity = Rarity.COMMON
 @export var burnable: bool = true  # Whether this card can be destroyed/removed from collection
+@export var enabled: bool = true  # Whether this card should be loaded into the game (for testing one card at a time)
 
 # Ability slots - each card can have up to 5 abilities
 # Only slots up to get_slot_count() are active based on rarity
@@ -198,6 +199,7 @@ func create_instance() -> CardData:
 	instance.element = element
 	instance.rarity = rarity
 	instance.card_art = card_art
+	instance.enabled = enabled
 	
 	# Deep copy ability slots
 	for slot in ability_slots:
