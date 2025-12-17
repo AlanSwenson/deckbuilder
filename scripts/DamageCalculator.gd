@@ -4,10 +4,22 @@ class_name DamageCalculator
 # References (set by TurnLogic)
 var game_state: Node2D = null
 var turn_history: Control = null
+var player_hand: Node2D = null
+var player_deck: Node2D = null
+var enemy_hand: Node2D = null
+var enemy_deck: Node2D = null
+var card_manager: Node2D = null
 
-func setup(game_state_ref: Node2D, turn_history_ref: Control = null) -> void:
+const CARD_SCENE_PATH = "res://scenes/Card.tscn"
+
+func setup(game_state_ref: Node2D, turn_history_ref: Control = null, player_hand_ref: Node2D = null, player_deck_ref: Node2D = null, enemy_hand_ref: Node2D = null, enemy_deck_ref: Node2D = null, card_manager_ref: Node2D = null) -> void:
 	game_state = game_state_ref
 	turn_history = turn_history_ref
+	player_hand = player_hand_ref
+	player_deck = player_deck_ref
+	enemy_hand = enemy_hand_ref
+	enemy_deck = enemy_deck_ref
+	card_manager = card_manager_ref
 
 # Calculate total damage from player cards
 func calculate_player_damage() -> int:
@@ -258,11 +270,13 @@ func resolve_turn_slot_by_slot() -> void:
 		var player_damage = 0
 		var player_heal = 0
 		var player_block = 0
+		var player_draw = 0
 		var player_ignores_block = false
 		if player_card_data:
 			player_damage = player_card_data.get_total_damage()
 			player_heal = player_card_data.get_total_heal()
 			player_block = player_card_data.get_total_block()
+			player_draw = player_card_data.get_total_draw()
 			player_ignores_block = player_card_data.ignores_block()
 			
 			print("[DamageCalculator] Slot ", slot_index, ": Resolving player card - name: ", player_card_data.card_name)
@@ -281,11 +295,13 @@ func resolve_turn_slot_by_slot() -> void:
 		var enemy_damage = 0
 		var enemy_heal = 0
 		var enemy_block = 0
+		var enemy_draw = 0
 		var enemy_ignores_block = false
 		if enemy_card_data:
 			enemy_damage = enemy_card_data.get_total_damage()
 			enemy_heal = enemy_card_data.get_total_heal()
 			enemy_block = enemy_card_data.get_total_block()
+			enemy_draw = enemy_card_data.get_total_draw()
 			enemy_ignores_block = enemy_card_data.ignores_block()
 			
 			if enemy_damage > 0:
@@ -374,6 +390,15 @@ func resolve_turn_slot_by_slot() -> void:
 			var offset_pos = display_position + Vector2(effect_count * 60 - 30, 0)
 			numbers_to_show.append({"position": offset_pos, "text": "+" + str(enemy_heal), "color": Color.GREEN})
 			effect_count += 1
+		
+		# Apply draw effects - draw cards to hand
+		if player_draw > 0:
+			print("[DamageCalculator] Slot ", slot_index, ": Player card draws ", player_draw, " card(s)")
+			await _draw_cards_to_hand(player_draw, false)  # false = player
+		
+		if enemy_draw > 0:
+			print("[DamageCalculator] Slot ", slot_index, ": Enemy card draws ", enemy_draw, " card(s)")
+			await _draw_cards_to_hand(enemy_draw, true)  # true = enemy
 		
 		# Show all numbers at once (non-blocking)
 		for number_data in numbers_to_show:
@@ -527,6 +552,143 @@ func apply_healing() -> void:
 	
 	if enemy_heal > 0 and game_state.has_method("heal_enemy"):
 		game_state.heal_enemy(enemy_heal)
+
+# Draw cards to hand when draw ability is triggered
+func _draw_cards_to_hand(count: int, is_enemy: bool) -> void:
+	if count <= 0:
+		return
+	
+	var hand = enemy_hand if is_enemy else player_hand
+	var deck = enemy_deck if is_enemy else player_deck
+	var hand_y = 110.0 if is_enemy else 890.0
+	var card_name_prefix = "EnemyCard" if is_enemy else "Card"
+	var deck_slot_name = "DeckSlotEnemy" if is_enemy else "DeckSlotPlayer"
+	
+	if not hand or not deck or not card_manager:
+		print("[DamageCalculator] Cannot draw cards - missing references (hand: %s, deck: %s, card_manager: %s)" % [str(hand != null), str(deck != null), str(card_manager != null)])
+		return
+	
+	# Get current hand size for positioning
+	var current_hand_size = 0
+	if is_enemy and "enemy_hand" in hand:
+		current_hand_size = hand.enemy_hand.size()
+	elif not is_enemy and "player_hand" in hand:
+		current_hand_size = hand.player_hand.size()
+	
+	print("[DamageCalculator] Drawing %d card(s) to %s hand (current size: %d)" % [count, "enemy" if is_enemy else "player", current_hand_size])
+	
+	# Use HandRefiller's method if available, otherwise create our own
+	var hand_refiller = get_tree().current_scene.get_node_or_null("TurnLogic/HandRefiller")
+	if hand_refiller and hand_refiller.has_method("_create_and_animate_card_to_hand"):
+		# Use existing HandRefiller method
+		for i in range(count):
+			# Check if game is still playing
+			if game_state and game_state.has_method("is_game_playing"):
+				if not game_state.is_game_playing():
+					print("[DamageCalculator] Game ended, stopping card draw")
+					break
+			
+			var card_data = deck.draw_card() if deck.has_method("draw_card") else null
+			if not card_data:
+				print("[DamageCalculator] WARNING: Could not draw card %d - deck may be empty" % (i + 1))
+				break
+			
+			await hand_refiller._create_and_animate_card_to_hand(card_data, hand, deck, card_name_prefix, deck_slot_name, hand_y, current_hand_size + i, is_enemy)
+			
+			# Small delay between cards
+			if i < count - 1:
+				await get_tree().create_timer(0.05).timeout
+	else:
+		# Fallback: create cards directly
+		var card_scene = load(CARD_SCENE_PATH)
+		for i in range(count):
+			# Check if game is still playing
+			if game_state and game_state.has_method("is_game_playing"):
+				if not game_state.is_game_playing():
+					print("[DamageCalculator] Game ended, stopping card draw")
+					break
+			
+			var card_data = deck.draw_card() if deck.has_method("draw_card") else null
+			if not card_data:
+				print("[DamageCalculator] WARNING: Could not draw card %d - deck may be empty" % (i + 1))
+				break
+			
+			# Create card instance
+			var new_card = card_scene.instantiate()
+			if not new_card:
+				print("[DamageCalculator] ERROR: Failed to instantiate card scene")
+				continue
+			
+			# Get card number from hand
+			var card_number = 1
+			if "card_id_counter" in hand:
+				card_number = hand.card_id_counter
+				hand.card_id_counter += 1
+			
+			new_card.name = card_name_prefix + str(card_number)
+			
+			# Set card number
+			if new_card.has_method("set_card_number"):
+				new_card.set_card_number(card_number)
+			new_card.set_meta("card_number", card_number)
+			if is_enemy:
+				new_card.set_meta("is_enemy_card", true)
+			
+			# Position card at deck location
+			var main_node = get_tree().current_scene
+			var deck_slot = main_node.get_node_or_null(deck_slot_name)
+			if deck_slot:
+				var deck_local_position = card_manager.to_local(deck_slot.global_position)
+				new_card.position = deck_local_position
+			
+			# Add card to CardManager
+			card_manager.add_child(new_card)
+			await get_tree().process_frame
+			
+			# Set card data
+			if new_card.has_method("set_card_data"):
+				new_card.set_card_data(card_data)
+			
+			# Calculate target position in hand
+			var target_x = 0.0
+			if hand.has_method("calculate_card_position"):
+				target_x = hand.calculate_card_position(current_hand_size + i)
+			else:
+				var card_width = 100
+				var center_x = hand.center_screen_x if "center_screen_x" in hand else get_viewport().size.x / 2.0
+				var total_width = (current_hand_size + i) * card_width
+				target_x = center_x + (current_hand_size + i) * card_width - total_width / 2.0
+			
+			var target_position = Vector2(target_x, hand_y)
+			
+			# Play flip animation and animate to hand position
+			var animation_player = new_card.get_node_or_null("AnimationPlayer")
+			if animation_player and animation_player.has_animation("card_flip"):
+				animation_player.play("card_flip")
+			
+			var tween = get_tree().create_tween()
+			tween.set_ease(Tween.EASE_OUT)
+			tween.set_trans(Tween.TRANS_CUBIC)
+			tween.tween_property(new_card, "position", target_position, 0.2)
+			await tween.finished
+			
+			# Add to hand array
+			if is_enemy and "enemy_hand" in hand:
+				hand.enemy_hand.append(new_card)
+			elif not is_enemy and "player_hand" in hand:
+				hand.player_hand.append(new_card)
+			
+			# Update hand positions
+			if hand.has_method("update_hand_positions"):
+				hand.update_hand_positions()
+			
+			# Register card with CardManager
+			if card_manager and card_manager.has_method("register_card"):
+				card_manager.register_card(new_card)
+			
+			# Small delay between cards
+			if i < count - 1:
+				await get_tree().create_timer(0.05).timeout
 
 # Recursively find all player slots
 func _find_player_slots(node: Node, result: Array) -> void:

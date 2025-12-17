@@ -16,6 +16,11 @@ func _ready() -> void:
 		area.mouse_exited.connect(_on_mouse_exited)
 		area.input_event.connect(_on_area_input_event)
 	
+	# Hide DrawLabel - draw information is shown in description instead
+	var draw_label = get_node_or_null("DrawLabel")
+	if draw_label:
+		draw_label.visible = false
+	
 	# Create drop shadow sprite (defer to ensure card image is ready)
 	call_deferred("_create_drop_shadow")
 
@@ -137,15 +142,10 @@ func update_card_display() -> void:
 		else:
 			block_label.visible = false
 	
-	# Update draw label using new ability system
+	# Hide DrawLabel - draw information is shown in description instead
 	var draw_label = get_node_or_null("DrawLabel")
 	if draw_label:
-		var draw = card_data.get_total_draw()
-		if draw > 0:
-			draw_label.text = "Draw: " + str(draw)
-			draw_label.visible = true
-		else:
-			draw_label.visible = false
+		draw_label.visible = false
 	
 	# Update special conditions label using new ability system
 	var special_label = get_node_or_null("SpecialLabel")

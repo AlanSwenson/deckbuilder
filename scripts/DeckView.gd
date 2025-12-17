@@ -291,7 +291,6 @@ func _make_card_labels_visible(card_node: Node):
 		"DamageLabel",
 		"HealLabel",
 		"BlockLabel",
-		"DrawLabel",
 		"SpecialLabel"
 	]
 	

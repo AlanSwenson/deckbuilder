@@ -43,7 +43,15 @@ func _ready() -> void:
 	damage_calculator = DamageCalculator.new()
 	add_child(damage_calculator)
 	var turn_history = get_parent().get_node_or_null("TurnHistory")
-	damage_calculator.setup(game_state, turn_history)
+	damage_calculator.setup(
+		game_state, 
+		turn_history, 
+		player_hand, 
+		player_deck, 
+		enemy_hand, 
+		enemy_deck, 
+		card_manager
+	)
 	
 	card_discarder = CardDiscarder.new()
 	add_child(card_discarder)
