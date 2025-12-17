@@ -14,6 +14,19 @@ var card_id_counter = 1  # Counter for unique card IDs (starts at 1, goes to 10)
 var cards_to_deal = []  # Queue of cards waiting to be dealt
 var is_dealing: bool = false  # Track if we're currently dealing
 
+# Discard selection mode
+var is_discard_mode: bool = false
+var cards_to_discard: int = 0
+var selected_for_discard: Array = []  # Array of cards selected for discard
+var discard_callback: Callable = Callable()  # Callback when discard is complete
+var discard_status_label: Label = null  # Label showing discard progress
+var last_toggled_card: Node2D = null  # Track last card toggled to prevent double-toggle
+var last_toggle_time: int = 0  # Track when last toggle happened (in milliseconds)
+
+# Expose discard mode state for InputManager to check
+func get_is_discard_mode() -> bool:
+	return is_discard_mode
+
 func _ready() -> void:
 	center_screen_x = get_viewport().size.x / 2
 	
@@ -389,3 +402,226 @@ func remove_card_from_hand(card):
 		" | Hand size: ",
 		player_hand.size()
 	)
+
+# Enter discard selection mode
+func enter_discard_mode(needed: int, callback: Callable) -> void:
+	is_discard_mode = true
+	cards_to_discard = needed
+	selected_for_discard.clear()
+	discard_callback = callback
+	print("[PlayerHand] Entered discard mode - need to discard %d cards" % needed)
+	print("[PlayerHand] Callback set: %s (valid: %s)" % [str(callback), str(callback.is_valid())])
+	_create_discard_status_label()
+	_update_discard_visuals()
+	_update_discard_status_label()
+
+# Exit discard selection mode
+func exit_discard_mode() -> void:
+	is_discard_mode = false
+	cards_to_discard = 0
+	selected_for_discard.clear()
+	discard_callback = Callable()
+	_update_discard_visuals()
+	_remove_discard_status_label()
+	print("[PlayerHand] Exited discard mode")
+
+# Toggle a card's discard selection
+func toggle_card_for_discard(card) -> void:
+	if not is_discard_mode:
+		print("[PlayerHand] WARNING: toggle_card_for_discard called but not in discard mode!")
+		return
+	
+	if not card or not is_instance_valid(card):
+		print("[PlayerHand] WARNING: toggle_card_for_discard called with invalid card!")
+		return
+	
+	# Prevent double-toggle: if this is the same card and it was just toggled very recently, ignore it
+	var current_time_ms = Time.get_ticks_msec()
+	if last_toggled_card == card and (current_time_ms - last_toggle_time) < 200:  # 200ms debounce
+		print("[PlayerHand] Ignoring rapid double-toggle for card: %s (time diff: %d ms)" % [card.name, current_time_ms - last_toggle_time])
+		return
+	
+	# Check if already selected
+	var was_selected = card in selected_for_discard
+	
+	if was_selected:
+		# Deselect
+		selected_for_discard.erase(card)
+		print("[PlayerHand] Deselected card for discard: %s (%d/%d selected)" % [card.name, selected_for_discard.size(), cards_to_discard])
+	else:
+		# Select (only if we haven't reached the limit)
+		if selected_for_discard.size() < cards_to_discard:
+			selected_for_discard.append(card)
+			print("[PlayerHand] Selected card for discard: %s (%d/%d selected)" % [card.name, selected_for_discard.size(), cards_to_discard])
+		else:
+			print("[PlayerHand] Cannot select more cards - already at limit (%d/%d)" % [selected_for_discard.size(), cards_to_discard])
+			return
+	
+	# Track this toggle
+	last_toggled_card = card
+	last_toggle_time = current_time_ms
+	
+	_update_discard_visuals()
+	_update_discard_status_label()
+	
+	# Check if we have enough cards selected
+	if selected_for_discard.size() == cards_to_discard:
+		print("[PlayerHand] Enough cards selected, showing confirmation dialog...")
+		_show_discard_confirmation()
+
+# Update visual feedback for discard mode
+func _update_discard_visuals() -> void:
+	for card in player_hand:
+		var is_selected = card in selected_for_discard
+		_set_card_discard_visual(card, is_selected)
+
+# Set visual feedback on a card for discard selection (yellow outline)
+func _set_card_discard_visual(card, is_selected: bool) -> void:
+	# Remove old overlay if it exists
+	var old_overlay = card.get_node_or_null("DiscardOverlay")
+	if old_overlay:
+		old_overlay.queue_free()
+	
+	if is_selected:
+		# Create a yellow outline using a Line2D or multiple ColorRects
+		# Using a simple approach with 4 ColorRects for the outline
+		var outline_container = Node2D.new()
+		outline_container.name = "DiscardOverlay"
+		card.add_child(outline_container)
+		
+		# Card dimensions
+		var card_width = 148.0
+		var card_height = 209.0
+		var outline_width = 4.0
+		
+		# Top outline
+		var top = ColorRect.new()
+		top.color = Color.YELLOW
+		top.size = Vector2(card_width + outline_width * 2, outline_width)
+		top.position = Vector2(-card_width/2 - outline_width, -card_height/2 - outline_width)
+		outline_container.add_child(top)
+		
+		# Bottom outline
+		var bottom = ColorRect.new()
+		bottom.color = Color.YELLOW
+		bottom.size = Vector2(card_width + outline_width * 2, outline_width)
+		bottom.position = Vector2(-card_width/2 - outline_width, card_height/2)
+		outline_container.add_child(bottom)
+		
+		# Left outline
+		var left = ColorRect.new()
+		left.color = Color.YELLOW
+		left.size = Vector2(outline_width, card_height)
+		left.position = Vector2(-card_width/2 - outline_width, -card_height/2)
+		outline_container.add_child(left)
+		
+		# Right outline
+		var right = ColorRect.new()
+		right.color = Color.YELLOW
+		right.size = Vector2(outline_width, card_height)
+		right.position = Vector2(card_width/2, -card_height/2)
+		outline_container.add_child(right)
+		
+		# Set z-index to be on top
+		outline_container.z_index = 1000
+
+# Discard the selected cards and call the callback
+func _discard_selected_cards() -> void:
+	if selected_for_discard.size() != cards_to_discard:
+		print("[PlayerHand] ERROR: Wrong number of cards selected for discard!")
+		return
+	
+	var player_deck = get_parent().get_node_or_null("PlayerDeck")
+	
+	# Discard each selected card
+	for card in selected_for_discard:
+		if card and is_instance_valid(card):
+			# Get card data
+			var card_data = null
+			if "card_data" in card and card.card_data:
+				card_data = card.card_data
+			
+			# Remove from hand
+			player_hand.erase(card)
+			
+			# Add to discard pile
+			if card_data and player_deck and player_deck.has_method("discard_card"):
+				player_deck.discard_card(card_data)
+			
+			# Remove card node
+			card.queue_free()
+	
+	# Update hand positions
+	update_hand_positions()
+	
+	# Store callback before exiting discard mode (since exit_discard_mode clears it)
+	var callback_to_call = discard_callback
+	
+	# Exit discard mode
+	exit_discard_mode()
+	
+	# Call the callback to proceed with turn evaluation
+	if callback_to_call.is_valid():
+		print("[PlayerHand] Calling discard callback to proceed with turn")
+		callback_to_call.call()
+	else:
+		push_error("[PlayerHand] Discard callback is not valid! Turn will not proceed automatically.")
+
+# Create status label for discard mode
+func _create_discard_status_label() -> void:
+	if discard_status_label:
+		return
+	
+	var main_node = get_parent() if get_parent() else get_tree().current_scene
+	discard_status_label = Label.new()
+	discard_status_label.name = "DiscardStatusLabel"
+	main_node.add_child(discard_status_label)
+	
+	# Position at bottom center of screen (above hand)
+	var viewport_size = get_viewport().size
+	discard_status_label.position = Vector2(viewport_size.x / 2.0, 750)  # Center horizontally, above hand
+	discard_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	discard_status_label.add_theme_font_size_override("font_size", 32)
+	discard_status_label.add_theme_color_override("font_color", Color.YELLOW)
+	discard_status_label.add_theme_color_override("font_outline_color", Color.BLACK)
+	discard_status_label.add_theme_constant_override("outline_size", 4)
+	discard_status_label.z_index = 1000
+
+# Update status label text
+func _update_discard_status_label() -> void:
+	if discard_status_label:
+		discard_status_label.text = "Select %d card(s) to discard (%d/%d selected)" % [cards_to_discard, selected_for_discard.size(), cards_to_discard]
+
+# Remove status label
+func _remove_discard_status_label() -> void:
+	if discard_status_label:
+		discard_status_label.queue_free()
+		discard_status_label = null
+
+# Show confirmation dialog for discarding
+func _show_discard_confirmation() -> void:
+	var main_node = get_parent() if get_parent() else get_tree().current_scene
+	
+	# Create confirmation dialog
+	var dialog = ConfirmationDialog.new()
+	dialog.dialog_text = "Discard %d card(s)?\n\nThis will remove the selected cards from your hand." % cards_to_discard
+	dialog.title = "Confirm Discard"
+	
+	# Connect confirmed signal
+	dialog.confirmed.connect(_on_discard_confirmed)
+	dialog.canceled.connect(_on_discard_canceled)
+	
+	# Add to scene and show
+	main_node.add_child(dialog)
+	dialog.popup_centered()
+
+# Called when user confirms discard
+func _on_discard_confirmed() -> void:
+	print("[PlayerHand] User confirmed discard - proceeding with discard and turn")
+	_discard_selected_cards()
+	# Note: _discard_selected_cards() will call discard_callback which triggers evaluate_turn()
+
+# Called when user cancels discard
+func _on_discard_canceled() -> void:
+	print("[PlayerHand] User canceled discard - cards remain selected")
+	# Cards stay selected, user can continue selecting/deselecting

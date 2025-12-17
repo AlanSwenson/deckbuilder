@@ -21,7 +21,7 @@ func setup(player_hand_ref: Node2D, enemy_hand_ref: Node2D, player_deck_ref: Nod
 	game_state = game_state_ref
 	card_scene = preload(CARD_SCENE_PATH)
 
-# Refill player hand to original amount (10 cards)
+# Draw 3 cards at the start of each turn (regardless of current hand size)
 func refill_player_hand() -> void:
 	# Check if game is still playing before doing anything
 	if game_state and game_state.has_method("is_game_playing"):
@@ -38,17 +38,12 @@ func refill_player_hand() -> void:
 	if "player_hand" in player_hand:
 		current_hand_size = player_hand.player_hand.size()
 	
-	var target_hand_size = 10  # HAND_COUNT
-	var cards_needed = target_hand_size - current_hand_size
+	const CARDS_TO_DRAW = 3  # Always draw 3 cards at start of turn
 	
-	if cards_needed <= 0:
-		print("[HandRefiller] Hand is already full (", current_hand_size, " cards)")
-		return
+	print("[HandRefiller] Drawing ", CARDS_TO_DRAW, " cards at start of turn (current hand size: ", current_hand_size, ")")
 	
-	print("[HandRefiller] Drawing ", cards_needed, " cards to refill hand")
-	
-	# Draw cards and add them to hand
-	for i in range(cards_needed):
+	# Draw 3 cards and add them to hand
+	for i in range(CARDS_TO_DRAW):
 		# Check if game is still playing before drawing
 		if game_state and game_state.has_method("is_game_playing"):
 			if not game_state.is_game_playing():
@@ -63,10 +58,10 @@ func refill_player_hand() -> void:
 		await _create_and_animate_card_to_hand(card_data, player_hand, player_deck, "Card", "DeckSlotPlayer", 890, current_hand_size + i)
 		
 		# Small delay between cards
-		if i < cards_needed - 1:
+		if i < CARDS_TO_DRAW - 1:
 			await get_tree().create_timer(0.05).timeout
 
-# Refill enemy hand to original amount (10 cards)
+# Draw 3 cards for enemy at the start of each turn (regardless of current hand size)
 func refill_enemy_hand() -> void:
 	# Check if game is still playing before doing anything
 	if game_state and game_state.has_method("is_game_playing"):
@@ -83,17 +78,12 @@ func refill_enemy_hand() -> void:
 	if "enemy_hand" in enemy_hand:
 		current_hand_size = enemy_hand.enemy_hand.size()
 	
-	var target_hand_size = 10  # HAND_COUNT
-	var cards_needed = target_hand_size - current_hand_size
+	const CARDS_TO_DRAW = 3  # Always draw 3 cards at start of turn
 	
-	if cards_needed <= 0:
-		print("[HandRefiller] Enemy hand is already full (", current_hand_size, " cards)")
-		return
+	print("[HandRefiller] Drawing ", CARDS_TO_DRAW, " cards for enemy at start of turn (current hand size: ", current_hand_size, ")")
 	
-	print("[HandRefiller] Drawing ", cards_needed, " cards to refill enemy hand")
-	
-	# Draw cards and add them to hand
-	for i in range(cards_needed):
+	# Draw 3 cards and add them to hand
+	for i in range(CARDS_TO_DRAW):
 		# Check if game is still playing before drawing
 		if game_state and game_state.has_method("is_game_playing"):
 			if not game_state.is_game_playing():
@@ -111,11 +101,11 @@ func refill_enemy_hand() -> void:
 		await _create_and_animate_card_to_hand(card_data, enemy_hand, enemy_deck, "EnemyCard", "DeckSlotEnemy", 110, current_hand_size + i, true)
 		
 		# Small delay between cards
-		if i < cards_needed - 1:
+		if i < CARDS_TO_DRAW - 1:
 			await get_tree().create_timer(0.05).timeout
 
 # Helper function to create and animate a card to hand
-func _create_and_animate_card_to_hand(card_data, hand: Node2D, deck: Node2D, card_name_prefix: String, deck_slot_name: String, hand_y: float, hand_index: int, is_enemy: bool = false) -> void:
+func _create_and_animate_card_to_hand(card_data, hand: Node2D, _deck: Node2D, card_name_prefix: String, deck_slot_name: String, hand_y: float, hand_index: int, is_enemy: bool = false) -> void:
 	# Create card instance
 	var new_card = card_scene.instantiate()
 	if not new_card:
@@ -192,9 +182,9 @@ func _create_and_animate_card_to_hand(card_data, hand: Node2D, deck: Node2D, car
 	else:
 		# Fallback calculation using constants
 		var card_width = 100  # CARD_WIDTH constant
-		var center_x = hand.center_screen_x if "center_screen_x" in hand else get_viewport().size.x / 2
+		var center_x = hand.center_screen_x if "center_screen_x" in hand else get_viewport().size.x / 2.0
 		var total_width = hand_index * card_width
-		target_x = center_x + hand_index * card_width - total_width / 2
+		target_x = center_x + hand_index * card_width - total_width / 2.0
 	
 	var target_position = Vector2(target_x, hand_y)
 	

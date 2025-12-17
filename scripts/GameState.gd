@@ -5,6 +5,9 @@ class_name GameState
 var player_hp: int = 100
 var enemy_hp: int = 100
 
+# Hand size management
+var max_hand_size: int = 10  # Default max hand size (can be modified by cards)
+
 # Game state
 enum GameStatus {
 	PLAYING,
@@ -138,7 +141,8 @@ func damage_player(amount: int) -> void:
 		if player_hp <= 0:
 			lose_game()
 	else:
-		print("[GameState] Player would take ", amount, " damage, but game is not playing (status: ", game_status, ")")
+		var msg = "Player would take %d damage, but game is not playing (status: %d)"
+		print(msg % [amount, game_status])
 
 # Apply damage to enemy
 func damage_enemy(amount: int) -> void:
@@ -156,7 +160,8 @@ func damage_enemy(amount: int) -> void:
 		if enemy_hp <= 0:
 			win_game()
 	else:
-		print("[GameState] Enemy would take ", amount, " damage, but game is not playing (status: ", game_status, ")")
+		var msg = "Enemy would take %d damage, but game is not playing (status: %d)"
+		print(msg % [amount, game_status])
 
 # Heal player
 func heal_player(amount: int) -> void:

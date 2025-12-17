@@ -390,4 +390,3 @@ func remove_card_from_hand(card):
 		" | Hand size: ",
 		enemy_hand.size()
 	)
-

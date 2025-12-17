@@ -53,6 +53,8 @@ func _ready() -> void:
 	add_child(hand_refiller)
 	hand_refiller.setup(player_hand, enemy_hand, player_deck, enemy_deck, card_manager, game_state)
 	
+	# Discard selection is now handled directly in PlayerHand - no separate UI needed
+	
 	# Connect to Play Hand button
 	var play_hand_button = get_parent().get_node_or_null("PlayHandButton")
 	if play_hand_button:
@@ -63,6 +65,28 @@ func _ready() -> void:
 
 func _on_play_hand_pressed() -> void:
 	print("[TurnLogic] ===== Play Hand button pressed - evaluating turn =====")
+	
+	# Check if hand size exceeds max hand size
+	if player_hand and "player_hand" in player_hand:
+		var current_hand_size = player_hand.player_hand.size()
+		var max_hand_size = 10  # Default max hand size
+		if game_state and "max_hand_size" in game_state:
+			max_hand_size = game_state.max_hand_size
+		
+		if current_hand_size > max_hand_size:
+			var cards_needed = current_hand_size - max_hand_size
+			print("[TurnLogic] Hand size (%d) exceeds max (%d), entering discard mode (need to discard %d)" % [current_hand_size, max_hand_size, cards_needed])
+			if player_hand.has_method("enter_discard_mode"):
+				player_hand.enter_discard_mode(cards_needed, _on_discard_complete)
+				return  # Wait for discard selection
+			else:
+				push_error("[TurnLogic] PlayerHand doesn't have enter_discard_mode method!")
+	
+	# Proceed with turn evaluation
+	evaluate_turn()
+
+func _on_discard_complete() -> void:
+	print("[TurnLogic] ===== Discard complete callback called - proceeding with turn evaluation =====")
 	evaluate_turn()
 
 func evaluate_turn() -> void:

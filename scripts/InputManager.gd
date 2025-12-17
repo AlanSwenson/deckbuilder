@@ -97,7 +97,7 @@ func _process(_delta: float) -> void:
 			_handle_card_release(dragged_card)
 			is_dragging = false
 			# Remove the dragging flag
-			if dragged_card.has_meta("is_being_dragged"):
+			if dragged_card and is_instance_valid(dragged_card) and dragged_card.has_meta("is_being_dragged"):
 				dragged_card.remove_meta("is_being_dragged")
 			dragged_card = null
 
@@ -106,9 +106,31 @@ func _process(_delta: float) -> void:
 func _on_card_input_event(
 	card: Node2D, _viewport: Node, event: InputEvent, _shape_idx: int
 ) -> void:
-	# print("[InputManager] _on_card_input_event() - Event from ", card.name,
-	# 	" | Event type: ", event.get_class())
+	# Check if we're in discard mode
+	var player_hand = get_tree().current_scene.get_node_or_null("PlayerHand")
+	if player_hand and player_hand.has_method("get_is_discard_mode") and player_hand.get_is_discard_mode():
+		# In discard mode - handle card selection instead of dragging
+		if event is InputEventMouseButton:
+			var mouse_event = event as InputEventMouseButton
+			# Only handle on press, not release (to avoid double-toggle)
+			if mouse_event.button_index == MOUSE_BUTTON_LEFT and mouse_event.pressed:
+				# Check if card is in hand
+				if _is_card_in_hand(card):
+					if player_hand.has_method("toggle_card_for_discard"):
+						player_hand.toggle_card_for_discard(card)
+					# Consume the event to prevent further processing
+					get_viewport().set_input_as_handled()
+					return
+			# If it's a release event in discard mode, just consume it (don't process)
+			elif mouse_event.button_index == MOUSE_BUTTON_LEFT and not mouse_event.pressed:
+				if _is_card_in_hand(card):
+					# Consume release events in discard mode to prevent any other handlers
+					get_viewport().set_input_as_handled()
+					return
+		# If not a click or not in hand, don't handle it in discard mode
+		return
 	
+	# Normal input handling (not in discard mode)
 	if event is InputEventMouseButton:
 		var mouse_event = event as InputEventMouseButton
 		
@@ -116,8 +138,12 @@ func _on_card_input_event(
 			if mouse_event.pressed:
 				print("[InputManager] _on_card_input_event() - Left mouse button PRESSED on ",
 					card.name)
-				# Only start dragging if we're not already dragging another card
+				# Only start dragging if we're not already dragging another card and not in discard mode
 				if not is_dragging:
+					# Double-check we're not in discard mode (in case check above failed)
+					if player_hand and player_hand.has_method("get_is_discard_mode") and player_hand.get_is_discard_mode():
+						# In discard mode, don't start dragging
+						return
 					_start_dragging(card)
 			else:
 				print("[InputManager] _on_card_input_event() - Left mouse button RELEASED on ",
@@ -128,7 +154,7 @@ func _on_card_input_event(
 					is_dragging = false
 					dragged_card = null
 					# Remove the dragging flag
-					if card.has_meta("is_being_dragged"):
+					if card and is_instance_valid(card) and card.has_meta("is_being_dragged"):
 						card.remove_meta("is_being_dragged")
 					print("[InputManager] _on_card_input_event() - DRAGGING STOPPED for ",
 						card.name)
@@ -256,7 +282,10 @@ func _reset_card_scale(card: Node2D) -> void:
 		var original_scale = card.get_meta("original_scale")
 		var tween = get_tree().create_tween()
 		tween.tween_property(card, "scale", original_scale, HOVER_ANIMATION_DURATION)
-		tween.tween_callback(func(): card.remove_meta("original_scale"))
+		tween.tween_callback(func(): 
+			if card and is_instance_valid(card) and card.has_meta("original_scale"):
+				card.remove_meta("original_scale")
+		)
 		tween.tween_callback(func(): _restore_card_z_index(card))
 	else:
 		# Fallback: just reset to 1,1
@@ -343,14 +372,16 @@ func _restore_card_z_index(card: Node2D) -> void:
 	if card.has_meta("dragged_original_z_index"):
 		var original_z = card.get_meta("dragged_original_z_index")
 		card.z_index = original_z
-		card.remove_meta("dragged_original_z_index")
+		if card and is_instance_valid(card) and card.has_meta("dragged_original_z_index"):
+			card.remove_meta("dragged_original_z_index")
 		# After restoring, let hand update set the proper z_index based on position
 		return
 	
 	# For hover effects: update z_index based on current hand position instead of restoring
 	# This ensures correct layering even if the card was reordered while hovering
 	if card.has_meta("original_z_index"):
-		card.remove_meta("original_z_index")
+		if card and is_instance_valid(card) and card.has_meta("original_z_index"):
+			card.remove_meta("original_z_index")
 		# Update z_index based on current position in hand
 		_update_card_z_index_from_hand_position(card)
 
