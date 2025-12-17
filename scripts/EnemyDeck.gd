@@ -6,13 +6,29 @@ var discard_pile: Array[CardData] = []
 var original_deck: Array[CardData] = []  # Store the original full deck
 
 func _ready() -> void:
-	# Initialize the deck with enemy cards from example_cards
+	# Wait for CardRegistry to finish loading, then initialize deck
+	call_deferred("_delayed_initialize")
+
+func _delayed_initialize() -> void:
+	# Wait a frame to ensure CardRegistry has loaded all cards
+	await get_tree().process_frame
 	initialize_deck()
 
 # Initialize the deck with enemy cards
 func initialize_deck() -> void:
+	# Ensure CardRegistry is ready
+	if not CardRegistry:
+		push_error("[EnemyDeck] CardRegistry not found!")
+		return
+	
 	# Get the starter enemy deck from ExampleCards
 	deck = ExampleCards.create_starter_enemy_deck()
+	
+	if deck.is_empty():
+		push_error("[EnemyDeck] Failed to create enemy deck - deck is empty!")
+		print("[EnemyDeck] CardRegistry cards loaded: ", CardRegistry.cards.size() if CardRegistry else 0)
+		return
+	
 	# Store a copy of the original deck
 	original_deck = deck.duplicate(true)
 	# Shuffle the deck

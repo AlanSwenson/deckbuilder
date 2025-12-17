@@ -217,6 +217,11 @@ func _create_and_animate_card_to_hand(card_data, hand: Node2D, _deck: Node2D, ca
 	if hand.has_method("update_hand_positions"):
 		hand.update_hand_positions()
 	
+	# Update hand size display
+	var game_state = get_tree().current_scene.get_node_or_null("GameState")
+	if game_state and game_state.has_method("update_hand_size_display"):
+		game_state.update_hand_size_display()
+	
 	# Small delay to ensure card is fully settled in hand position
 	await get_tree().create_timer(0.05).timeout
 	

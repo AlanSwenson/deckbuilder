@@ -120,6 +120,17 @@ func get_total_draw() -> int:
 			total += slot.rolled_value
 	return total
 
+# Get total max hand size increase from all active CUSTOM category abilities with id "max_hand_size"
+func get_total_max_hand_size_increase() -> int:
+	var total = 0
+	var active_slots = get_slot_count()
+	for i in range(mini(active_slots, ability_slots.size())):
+		var slot = ability_slots[i]
+		if slot.ability_type and slot.ability_type.category == AbilityType.EffectCategory.CUSTOM:
+			if slot.ability_type.id == "max_hand_size":
+				total += slot.rolled_value
+	return total
+
 # Check if this card ignores block
 func ignores_block() -> bool:
 	return has_ability("ignores_block")

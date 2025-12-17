@@ -271,12 +271,14 @@ func resolve_turn_slot_by_slot() -> void:
 		var player_heal = 0
 		var player_block = 0
 		var player_draw = 0
+		var player_max_hand_size_increase = 0
 		var player_ignores_block = false
 		if player_card_data:
 			player_damage = player_card_data.get_total_damage()
 			player_heal = player_card_data.get_total_heal()
 			player_block = player_card_data.get_total_block()
 			player_draw = player_card_data.get_total_draw()
+			player_max_hand_size_increase = player_card_data.get_total_max_hand_size_increase()
 			player_ignores_block = player_card_data.ignores_block()
 			
 			print("[DamageCalculator] Slot ", slot_index, ": Resolving player card - name: ", player_card_data.card_name)
@@ -296,12 +298,14 @@ func resolve_turn_slot_by_slot() -> void:
 		var enemy_heal = 0
 		var enemy_block = 0
 		var enemy_draw = 0
+		var enemy_max_hand_size_increase = 0
 		var enemy_ignores_block = false
 		if enemy_card_data:
 			enemy_damage = enemy_card_data.get_total_damage()
 			enemy_heal = enemy_card_data.get_total_heal()
 			enemy_block = enemy_card_data.get_total_block()
 			enemy_draw = enemy_card_data.get_total_draw()
+			enemy_max_hand_size_increase = enemy_card_data.get_total_max_hand_size_increase()
 			enemy_ignores_block = enemy_card_data.ignores_block()
 			
 			if enemy_damage > 0:
@@ -390,6 +394,27 @@ func resolve_turn_slot_by_slot() -> void:
 			var offset_pos = display_position + Vector2(effect_count * 60 - 30, 0)
 			numbers_to_show.append({"position": offset_pos, "text": "+" + str(enemy_heal), "color": Color.GREEN})
 			effect_count += 1
+		
+		# Apply max hand size increase effects FIRST (update display immediately)
+		if player_max_hand_size_increase > 0:
+			print("[DamageCalculator] Slot ", slot_index, ": Player card increases player max hand size by ", player_max_hand_size_increase)
+			if game_state:
+				game_state.player_max_hand_size += player_max_hand_size_increase
+				print("[DamageCalculator] Player max hand size is now ", game_state.player_max_hand_size)
+				# Update display immediately when ability is processed
+				game_state.update_hand_size_display()
+				# Small delay to ensure UI update is visible
+				await get_tree().process_frame
+		
+		if enemy_max_hand_size_increase > 0:
+			print("[DamageCalculator] Slot ", slot_index, ": Enemy card increases enemy max hand size by ", enemy_max_hand_size_increase)
+			if game_state:
+				game_state.enemy_max_hand_size += enemy_max_hand_size_increase
+				print("[DamageCalculator] Enemy max hand size is now ", game_state.enemy_max_hand_size)
+				# Update display immediately when ability is processed
+				game_state.update_hand_size_display()
+				# Small delay to ensure UI update is visible
+				await get_tree().process_frame
 		
 		# Apply draw effects - draw cards to hand
 		if player_draw > 0:

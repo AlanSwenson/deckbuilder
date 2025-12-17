@@ -78,8 +78,8 @@ func _on_play_hand_pressed() -> void:
 	if player_hand and "player_hand" in player_hand:
 		var current_hand_size = player_hand.player_hand.size()
 		var max_hand_size = 10  # Default max hand size
-		if game_state and "max_hand_size" in game_state:
-			max_hand_size = game_state.max_hand_size
+		if game_state and "player_max_hand_size" in game_state:
+			max_hand_size = game_state.player_max_hand_size
 		
 		if current_hand_size > max_hand_size:
 			var cards_needed = current_hand_size - max_hand_size

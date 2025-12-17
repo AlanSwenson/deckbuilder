@@ -25,7 +25,7 @@ func _ready() -> void:
 		deck_global_position = deck.global_position
 	
 	# Convert deck position to local coordinates relative to CardManager
-	var deck_local_position = card_manager.to_local(deck_global_position)
+	var _deck_local_position = card_manager.to_local(deck_global_position)
 	
 	# Store deck position and card manager for later use
 	# We'll create cards and draw from deck one at a time during dealing
@@ -41,8 +41,32 @@ func _ready() -> void:
 			print("[EnemyHand] Saved match state detected, skipping auto-deal")
 			return
 	
+	# Wait for EnemyDeck to be initialized
+	var enemy_deck = get_parent().get_node_or_null("EnemyDeck")
+	if enemy_deck:
+		# Wait for deck to be initialized (check up to 10 frames)
+		for i in range(10):
+			await get_tree().process_frame
+			var deck_size = 0
+			if enemy_deck.has_method("get_deck_size"):
+				deck_size = enemy_deck.get_deck_size()
+			elif "deck" in enemy_deck:
+				deck_size = enemy_deck.deck.size()
+			
+			if deck_size > 0:
+				print("[EnemyHand] EnemyDeck is ready with ", deck_size, " cards")
+				break
+			elif i == 9:
+				print("[EnemyHand] WARNING: EnemyDeck still not ready after 10 frames!")
+	
 	# Start dealing cards automatically
 	deal_cards()
+
+# Update hand size display in GameState
+func _update_hand_size_display() -> void:
+	var game_state = get_parent().get_node_or_null("GameState")
+	if game_state and game_state.has_method("update_hand_size_display"):
+		game_state.update_hand_size_display()
 		
 func add_card_to_hand(card):
 	enemy_hand.insert(0, card)
@@ -73,14 +97,46 @@ func deal_cards() -> void:
 	var deck_local_position = card_manager.to_local(deck_global_position)
 	var card_scene = preload(CARD_SCENE_PATH)
 	
+	# Check if deck is initialized and has cards
+	if not enemy_deck or not enemy_deck.has_method("draw_card"):
+		print("[EnemyHand] ERROR: EnemyDeck not found or invalid!")
+		is_dealing = false
+		return
+	
+	# Wait a frame to ensure deck is fully initialized
+	await get_tree().process_frame
+	
+	# Check deck size
+	var deck_size = 0
+	if enemy_deck.has_method("get_deck_size"):
+		deck_size = enemy_deck.get_deck_size()
+	else:
+		deck_size = enemy_deck.deck.size() if "deck" in enemy_deck else 0
+	
+	if deck_size == 0:
+		print("[EnemyHand] ERROR: EnemyDeck is empty! Cannot deal cards.")
+		is_dealing = false
+		return
+	
+	print("[EnemyHand] Starting to deal cards. Deck size: ", deck_size)
+	
 	# Deal each card one at a time, drawing from deck as we go
 	for i in range(HAND_COUNT):
-		# Draw a card from the deck NOW (this will decrease the deck counter)
-		var card_data = null
-		if enemy_deck and enemy_deck.has_method("draw_card"):
-			card_data = enemy_deck.draw_card()
+		# Check if deck still has cards
+		if enemy_deck.has_method("get_deck_size"):
+			deck_size = enemy_deck.get_deck_size()
 		else:
-			print("[EnemyHand] WARNING: EnemyDeck not found, creating empty card")
+			deck_size = enemy_deck.deck.size() if "deck" in enemy_deck else 0
+		
+		if deck_size == 0:
+			print("[EnemyHand] WARNING: Deck ran out of cards while dealing (dealt ", i, " cards)")
+			break
+		
+		# Draw a card from the deck NOW (this will decrease the deck counter)
+		var card_data = enemy_deck.draw_card()
+		if not card_data:
+			print("[EnemyHand] WARNING: Could not draw card ", i + 1, " - deck may be empty")
+			break
 		
 		# Instantiate the card
 		var new_card = card_scene.instantiate()
@@ -390,3 +446,4 @@ func remove_card_from_hand(card):
 		" | Hand size: ",
 		enemy_hand.size()
 	)
+	_update_hand_size_display()

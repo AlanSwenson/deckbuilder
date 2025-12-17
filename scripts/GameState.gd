@@ -6,7 +6,8 @@ var player_hp: int = 100
 var enemy_hp: int = 100
 
 # Hand size management
-var max_hand_size: int = 10  # Default max hand size (can be modified by cards)
+var player_max_hand_size: int = 10  # Default max hand size for player (can be modified by cards)
+var enemy_max_hand_size: int = 10  # Default max hand size for enemy (can be modified by cards)
 
 # Game state
 enum GameStatus {
@@ -26,6 +27,8 @@ signal game_lost()
 # UI references
 var player_hp_label: Label = null
 var enemy_hp_label: Label = null
+var player_hand_size_label: Label = null
+var enemy_hand_size_label: Label = null
 var game_over_label: Label = null
 var game_over_canvas: CanvasLayer = null
 
@@ -33,6 +36,10 @@ func _ready() -> void:
 	# Create UI labels for HP display
 	_create_hp_ui()
 	update_hp_display()
+	
+	# Create hand size labels
+	_create_hand_size_ui()
+	call_deferred("update_hand_size_display")
 	
 	# Check for saved game state and load it
 	call_deferred("_check_and_load_saved_state")
@@ -119,11 +126,51 @@ func _create_hp_ui() -> void:
 	game_over_label.add_theme_constant_override("outline_size", 6)
 	game_over_label.visible = false
 
+func _create_hand_size_ui() -> void:
+	# Player hand size label (below player HP, bottom left)
+	player_hand_size_label = Label.new()
+	player_hand_size_label.name = "PlayerHandSizeLabel"
+	add_child(player_hand_size_label)
+	player_hand_size_label.position = Vector2(20, 60)
+	player_hand_size_label.add_theme_font_size_override("font_size", 24)
+	player_hand_size_label.add_theme_color_override("font_color", Color.WHITE)
+	player_hand_size_label.add_theme_color_override("font_outline_color", Color.BLACK)
+	player_hand_size_label.add_theme_constant_override("outline_size", 4)
+	
+	# Enemy hand size label (below enemy HP, top right)
+	enemy_hand_size_label = Label.new()
+	enemy_hand_size_label.name = "EnemyHandSizeLabel"
+	add_child(enemy_hand_size_label)
+	enemy_hand_size_label.position = Vector2(20, 120)
+	enemy_hand_size_label.add_theme_font_size_override("font_size", 24)
+	enemy_hand_size_label.add_theme_color_override("font_color", Color.WHITE)
+	enemy_hand_size_label.add_theme_color_override("font_outline_color", Color.BLACK)
+	enemy_hand_size_label.add_theme_constant_override("outline_size", 4)
+
 func update_hp_display() -> void:
 	if player_hp_label:
 		player_hp_label.text = "Player HP: " + str(player_hp)
 	if enemy_hp_label:
 		enemy_hp_label.text = "Enemy HP: " + str(enemy_hp)
+
+func update_hand_size_display() -> void:
+	var player_hand = get_parent().get_node_or_null("PlayerHand")
+	var enemy_hand = get_parent().get_node_or_null("EnemyHand")
+	
+	var player_hand_size = 0
+	var enemy_hand_size = 0
+	
+	if player_hand and "player_hand" in player_hand:
+		player_hand_size = player_hand.player_hand.size()
+	
+	if enemy_hand and "enemy_hand" in enemy_hand:
+		enemy_hand_size = enemy_hand.enemy_hand.size()
+	
+	if player_hand_size_label:
+		player_hand_size_label.text = "Hand: %d / %d" % [player_hand_size, player_max_hand_size]
+	
+	if enemy_hand_size_label:
+		enemy_hand_size_label.text = "Hand: %d / %d" % [enemy_hand_size, enemy_max_hand_size]
 
 # Apply damage to player
 func damage_player(amount: int) -> void:

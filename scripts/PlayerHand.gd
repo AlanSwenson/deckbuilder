@@ -27,6 +27,12 @@ var last_toggle_time: int = 0  # Track when last toggle happened (in millisecond
 func get_is_discard_mode() -> bool:
 	return is_discard_mode
 
+# Update hand size display in GameState
+func _update_hand_size_display() -> void:
+	var game_state = get_parent().get_node_or_null("GameState")
+	if game_state and game_state.has_method("update_hand_size_display"):
+		game_state.update_hand_size_display()
+
 func _ready() -> void:
 	center_screen_x = get_viewport().size.x / 2
 	
@@ -217,6 +223,7 @@ func add_card_to_hand_at_index(card, target_index: int):
 		" | Hand size: ",
 		player_hand.size()
 	)
+	_update_hand_size_display()
 
 # Check if a position is within the hand area
 func is_position_in_hand_area(position: Vector2) -> bool:
@@ -402,6 +409,7 @@ func remove_card_from_hand(card):
 		" | Hand size: ",
 		player_hand.size()
 	)
+	_update_hand_size_display()
 
 # Enter discard selection mode
 func enter_discard_mode(needed: int, callback: Callable) -> void:
