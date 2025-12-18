@@ -1,9 +1,9 @@
-[gd_scene load_steps=5 format=3 uid="uid://bmvfsswc8flwq"]
+[gd_scene load_steps=5 format=3 uid="uid://cv3ewcf52g6ii"]
 
-[ext_resource type="Script" path="res://scripts/PlayerHub.gd" id="1_hub"]
-[ext_resource type="PackedScene" path="res://scenes/CollectionView.tscn" id="2_collection"]
+[ext_resource type="Script" uid="uid://dw734xqsed3ix" path="res://scripts/PlayerHub.gd" id="1_hub"]
+[ext_resource type="PackedScene" uid="uid://cyf481d5b2mti" path="res://scenes/CollectionView.tscn" id="2_collection"]
 [ext_resource type="PackedScene" path="res://scenes/DeckListView.tscn" id="3_decklist"]
-[ext_resource type="PackedScene" path="res://scenes/DeckEditor.tscn" id="4_editor"]
+[ext_resource type="PackedScene" uid="uid://cgkjtmy5cmnlp" path="res://scenes/DeckEditor.tscn" id="4_editor"]
 
 [node name="PlayerHub" type="Control"]
 layout_mode = 3
@@ -23,83 +23,122 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.12, 0.12, 0.15, 1)
 
-[node name="VBoxContainer" type="VBoxContainer" parent="."]
+[node name="MarginContainer" type="MarginContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 10
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
 
-[node name="Header" type="HBoxContainer" parent="VBoxContainer"]
+[node name="MainLayout" type="Control" parent="MarginContainer"]
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="Header" type="HBoxContainer" parent="MarginContainer/MainLayout"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 40.0
+grow_horizontal = 2
 theme_override_constants/separation = 20
 
-[node name="BackButton" type="Button" parent="VBoxContainer/Header"]
+[node name="BackButton" type="Button" parent="MarginContainer/MainLayout/Header"]
 custom_minimum_size = Vector2(120, 40)
 layout_mode = 2
 text = "< Back"
 
-[node name="SaveInfoLabel" type="Label" parent="VBoxContainer/Header"]
+[node name="SaveInfoLabel" type="Label" parent="MarginContainer/MainLayout/Header"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 20
 text = "Save Slot 1 | 56 Cards | 2 Decks"
 vertical_alignment = 1
 
-[node name="TabBar" type="HBoxContainer" parent="VBoxContainer"]
-layout_mode = 2
+[node name="TabBar" type="HBoxContainer" parent="MarginContainer/MainLayout"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 50.0
+offset_bottom = 100.0
+grow_horizontal = 2
 theme_override_constants/separation = 10
 
-[node name="CollectionTab" type="Button" parent="VBoxContainer/TabBar"]
+[node name="CollectionTab" type="Button" parent="MarginContainer/MainLayout/TabBar"]
 custom_minimum_size = Vector2(150, 50)
 layout_mode = 2
 toggle_mode = true
 button_pressed = true
 text = "Collection"
 
-[node name="DecksTab" type="Button" parent="VBoxContainer/TabBar"]
+[node name="DecksTab" type="Button" parent="MarginContainer/MainLayout/TabBar"]
 custom_minimum_size = Vector2(150, 50)
 layout_mode = 2
 toggle_mode = true
 text = "Decks"
 
-[node name="ContentContainer" type="MarginContainer" parent="VBoxContainer"]
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_constants/margin_left = 20
-theme_override_constants/margin_top = 10
-theme_override_constants/margin_right = 20
-theme_override_constants/margin_bottom = 10
-
-[node name="CollectionView" parent="VBoxContainer/ContentContainer" instance=ExtResource("2_collection")]
-layout_mode = 2
-
-[node name="DeckListView" parent="VBoxContainer/ContentContainer" instance=ExtResource("3_decklist")]
-visible = false
-layout_mode = 2
-
-[node name="Footer" type="HBoxContainer" parent="VBoxContainer"]
-layout_mode = 2
+[node name="Footer" type="HBoxContainer" parent="MarginContainer/MainLayout"]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -70.0
+grow_horizontal = 2
+grow_vertical = 0
 theme_override_constants/separation = 20
-alignment = 2
 
-[node name="CurrentDeckLabel" type="Label" parent="VBoxContainer/Footer"]
+[node name="CurrentDeckLabel" type="Label" parent="MarginContainer/MainLayout/Footer"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_font_sizes/font_size = 18
 text = "Current Deck: Default Deck (30 cards)"
 vertical_alignment = 1
 
-[node name="PlayButton" type="Button" parent="VBoxContainer/Footer"]
+[node name="PlayButton" type="Button" parent="MarginContainer/MainLayout/Footer"]
 custom_minimum_size = Vector2(200, 60)
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "PLAY"
 
-[node name="DeckEditorPopup" type="CanvasLayer" parent="."]
+[node name="ContentPanel" type="MarginContainer" parent="MarginContainer/MainLayout"]
+layout_mode = 1
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 110.0
+offset_bottom = -80.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 0
+theme_override_constants/margin_top = 0
+theme_override_constants/margin_right = 0
+theme_override_constants/margin_bottom = 0
+
+[node name="ClipContainer" type="Control" parent="MarginContainer/MainLayout/ContentPanel"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="CollectionView" parent="MarginContainer/MainLayout/ContentPanel/ClipContainer" instance=ExtResource("2_collection")]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="DeckListView" parent="MarginContainer/MainLayout/ContentPanel/ClipContainer" instance=ExtResource("3_decklist")]
 visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+
+[node name="DeckEditorPopup" type="CanvasLayer" parent="."]
 layer = 10
+visible = false
 
 [node name="DeckEditor" parent="DeckEditorPopup" instance=ExtResource("4_editor")]

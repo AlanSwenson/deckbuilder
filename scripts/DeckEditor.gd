@@ -445,4 +445,3 @@ func _on_cancel_pressed():
 func _close():
 	visible = false
 	emit_signal("editor_closed")
-

@@ -1,4 +1,4 @@
-extends Control
+extends VBoxContainer
 
 # Filter/sort options
 enum SortBy { NAME, RARITY, ELEMENT }
@@ -22,19 +22,19 @@ var summary_label: Label
 
 func _ready():
 	# Get node references
-	filter_all_btn = $VBoxContainer/FilterBar/FilterAll
-	filter_sulfur_btn = $VBoxContainer/FilterBar/FilterSulfur
-	filter_mercury_btn = $VBoxContainer/FilterBar/FilterMercury
-	filter_salt_btn = $VBoxContainer/FilterBar/FilterSalt
-	filter_vitae_btn = $VBoxContainer/FilterBar/FilterVitae
-	filter_aether_btn = $VBoxContainer/FilterBar/FilterAether
+	filter_all_btn = $FilterBar/FilterAll
+	filter_sulfur_btn = $FilterBar/FilterSulfur
+	filter_mercury_btn = $FilterBar/FilterMercury
+	filter_salt_btn = $FilterBar/FilterSalt
+	filter_vitae_btn = $FilterBar/FilterVitae
+	filter_aether_btn = $FilterBar/FilterAether
 	
-	sort_name_btn = $VBoxContainer/SortBar/SortName
-	sort_rarity_btn = $VBoxContainer/SortBar/SortRarity
-	sort_element_btn = $VBoxContainer/SortBar/SortElement
+	sort_name_btn = $SortBar/SortName
+	sort_rarity_btn = $SortBar/SortRarity
+	sort_element_btn = $SortBar/SortElement
 	
-	grid_container = $VBoxContainer/ScrollContainer/GridContainer
-	summary_label = $VBoxContainer/SummaryLabel
+	grid_container = $ScrollContainer/GridContainer
+	summary_label = $SummaryLabel
 	
 	# Connect filter buttons
 	filter_all_btn.pressed.connect(_on_filter_pressed.bind(FilterElement.ALL))

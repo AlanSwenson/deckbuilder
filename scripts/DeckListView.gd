@@ -1,4 +1,4 @@
-extends Control
+extends VBoxContainer
 
 signal edit_deck_requested(deck_name: String)
 signal deck_selected(deck_name: String)
@@ -8,8 +8,8 @@ var create_deck_button: Button
 var deck_list_container: VBoxContainer
 
 func _ready():
-	create_deck_button = $VBoxContainer/CreateDeckButton
-	deck_list_container = $VBoxContainer/ScrollContainer/DeckListContainer
+	create_deck_button = $CreateDeckButton
+	deck_list_container = $ScrollContainer/DeckListContainer
 	
 	create_deck_button.pressed.connect(_on_create_deck_pressed)
 	

@@ -10,8 +10,8 @@ var back_button: Button
 var collection_tab: Button
 var decks_tab: Button
 var content_container: MarginContainer
-var collection_view: Control
-var deck_list_view: Control
+var collection_view: VBoxContainer
+var deck_list_view: VBoxContainer
 var current_deck_label: Label
 var play_button: Button
 var deck_editor_popup: CanvasLayer
@@ -22,15 +22,15 @@ var current_tab: Tab = Tab.COLLECTION
 
 func _ready():
 	# Get node references
-	save_info_label = $VBoxContainer/Header/SaveInfoLabel
-	back_button = $VBoxContainer/Header/BackButton
-	collection_tab = $VBoxContainer/TabBar/CollectionTab
-	decks_tab = $VBoxContainer/TabBar/DecksTab
-	content_container = $VBoxContainer/ContentContainer
-	collection_view = $VBoxContainer/ContentContainer/CollectionView
-	deck_list_view = $VBoxContainer/ContentContainer/DeckListView
-	current_deck_label = $VBoxContainer/Footer/CurrentDeckLabel
-	play_button = $VBoxContainer/Footer/PlayButton
+	save_info_label = $MarginContainer/MainLayout/Header/SaveInfoLabel
+	back_button = $MarginContainer/MainLayout/Header/BackButton
+	collection_tab = $MarginContainer/MainLayout/TabBar/CollectionTab
+	decks_tab = $MarginContainer/MainLayout/TabBar/DecksTab
+	content_container = $MarginContainer/MainLayout/ContentPanel
+	collection_view = $MarginContainer/MainLayout/ContentPanel/ClipContainer/CollectionView
+	deck_list_view = $MarginContainer/MainLayout/ContentPanel/ClipContainer/DeckListView
+	current_deck_label = $MarginContainer/MainLayout/Footer/CurrentDeckLabel
+	play_button = $MarginContainer/MainLayout/Footer/PlayButton
 	deck_editor_popup = $DeckEditorPopup
 	
 	# Connect button signals
