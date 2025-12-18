@@ -52,6 +52,15 @@ func _ready():
 	if deck_editor and deck_editor.has_signal("editor_closed"):
 		deck_editor.editor_closed.connect(_on_editor_closed)
 	
+	# Check if there's an active match to resume
+	if SaveManager and SaveManager.current_save_data:
+		if SaveManager.current_save_data.has_match_to_resume():
+			print("[PlayerHub] Found in-progress match - transitioning to game scene")
+			# Wait a frame to ensure everything is initialized
+			await get_tree().process_frame
+			get_tree().change_scene_to_file(GAME_SCENE)
+			return
+	
 	# Initialize display
 	_update_save_info()
 	_update_current_deck_display()

@@ -12,6 +12,36 @@ func _ready():
 	if not dir.dir_exists("saves"):
 		dir.make_dir("saves")
 
+func _notification(what: int) -> void:
+	# Handle window close request
+	if what == NOTIFICATION_WM_CLOSE_REQUEST:
+		_on_window_close_requested()
+
+func _on_window_close_requested() -> void:
+	# Save game state when window is about to close
+	print("[SaveManager] Window close requested, saving game state...")
+	
+	# Check if we're in a game match that needs saving
+	var scene_tree = get_tree()
+	if scene_tree and scene_tree.current_scene:
+		var game_state = scene_tree.current_scene.get_node_or_null("GameState")
+		if game_state and game_state.has_method("is_game_playing"):
+			if game_state.is_game_playing():
+				print("[SaveManager] Active match detected, saving game state before exit")
+				autosave_game_state()
+			else:
+				print("[SaveManager] No active match, skipping game state save")
+		else:
+			# If we can't find GameState, still try to save if there's save data
+			if current_save_data != null and current_save_slot != -1:
+				print("[SaveManager] Saving general game data before exit")
+				save_game()
+	else:
+		# No current scene, just save if we have save data
+		if current_save_data != null and current_save_slot != -1:
+			print("[SaveManager] Saving general game data before exit")
+			save_game()
+
 # Load save data from slot number
 func load_save(slot: int) -> SaveData:
 	var file_path = SAVE_DIR + (SAVE_FILE_TEMPLATE % slot)

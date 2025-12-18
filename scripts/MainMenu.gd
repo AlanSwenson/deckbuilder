@@ -181,6 +181,16 @@ func _on_save_slot_pressed(slot: int):
 		# Check if there's an in-progress match
 		if save_data.has_match_to_resume():
 			print("[MainMenu] Found in-progress match - will resume game state")
+			# Save immediately to ensure state is persisted
+			SaveManager.save_game()
+			# Update the display to show the new save info
+			_update_save_slot_displays()
+			# Go directly to game scene to resume the match
+			print("[MainMenu] Resuming match - changing scene to: %s" % GAME_SCENE)
+			var scene_error = get_tree().change_scene_to_file(GAME_SCENE)
+			if scene_error != OK:
+				push_error("[MainMenu] Failed to change scene: %d" % scene_error)
+			return
 	
 	# Save immediately to create/persist the file
 	SaveManager.save_game()
